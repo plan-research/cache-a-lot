@@ -10,6 +10,8 @@ repositories {
 }
 
 dependencies {
+    implementation(libs.kotlinx.coroutines.core)
+
     implementation(libs.ksmt.core)
     implementation(libs.ksmt.z3)
     implementation(libs.ksmt.runner)
