@@ -11,10 +11,13 @@ repositories {
 
 dependencies {
     implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.collections.immutable)
 
     implementation(libs.ksmt.core)
     implementation(libs.ksmt.z3)
     implementation(libs.ksmt.runner)
+
+    implementation(libs.kotlinx.dataframe)
 
     testImplementation(kotlin("test"))
 }

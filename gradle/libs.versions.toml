@@ -3,12 +3,16 @@
 kotlin = "1.9.23"
 ksmt = "0.5.8"
 coroutines = "1.8.0"
+collections = "0.3.7"
+dataframe = "0.13.1"
 
 [libraries]
 
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-collections-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collections-immutable", version.ref = "collections" }
 ksmt-core = { module = "io.ksmt:ksmt-core", version.ref = "ksmt" }
 ksmt-z3 = { module = "io.ksmt:ksmt-z3", version.ref = "ksmt" }
 ksmt-runner = { module = "io.ksmt:ksmt-runner", version.ref = "ksmt" }
+kotlinx-dataframe = { module = "org.jetbrains.kotlinx:dataframe", version.ref = "dataframe" }
 
 [plugins]
