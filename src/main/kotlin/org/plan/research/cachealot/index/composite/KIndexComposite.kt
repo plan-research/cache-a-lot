@@ -1,8 +1,10 @@
-package org.plan.research.cachealot.index
+package org.plan.research.cachealot.index.composite
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.fold
+import org.plan.research.cachealot.index.KIndex
 
 class KIndexComposite<K, I, V, IN : KIndex<I, V>>(
     outerIndex: () -> KIndex<K, IN>,
@@ -23,6 +25,7 @@ class KIndexComposite<K, I, V, IN : KIndex<I, V>>(
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun getCandidates(key: Pair<K, I>): Flow<V> =
         outer.getCandidates(key.first).flatMapConcat {
             it.getCandidates(key.second)
