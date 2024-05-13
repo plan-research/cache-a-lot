@@ -5,6 +5,7 @@ import io.ksmt.expr.KAndExpr
 import io.ksmt.solver.KSolverStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import org.jetbrains.kotlinx.dataframe.api.append
 import org.jetbrains.kotlinx.dataframe.api.dataFrameOf
@@ -15,13 +16,17 @@ import org.plan.research.cachealot.scripts.BenchmarkExecutor
 import org.plan.research.cachealot.scripts.ExecutionMode
 import org.plan.research.cachealot.scripts.ScriptContext
 import java.nio.file.Path
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.io.path.Path
 import kotlin.io.path.createDirectory
 import kotlin.io.path.div
+import kotlin.time.measureTime
+import kotlin.time.measureTimedValue
 
 private val scriptContext = ScriptContext()
 private val executionMode = ExecutionMode.BENCH_PARALLEL
 private val coroutineScope = Dispatchers.Default
+private val benchmarkPermits = scriptContext.poolSize
 
 private val emptyChecker: KUnsatChecker
     get() = object : KUnsatChecker {
@@ -39,6 +44,9 @@ private data class StatsEntry(
     var unsat: Int = 0,
     var unknown: Int = 0,
     var reusedUnsat: Int = 0,
+    var solvingTime: Long = 0,
+    var checkingTime: Long = 0,
+    var updatingTime: Long = 0,
 ) {
     operator fun plusAssign(other: StatsEntry) {
         this.cnt += other.cnt
@@ -46,15 +54,19 @@ private data class StatsEntry(
         this.unsat += other.unsat
         this.unknown += other.unknown
         this.reusedUnsat += other.reusedUnsat
+        this.solvingTime += other.solvingTime
+        this.checkingTime += other.checkingTime
+        this.updatingTime += other.updatingTime
     }
-
 
     override fun toString(): String {
         val percentage = if (unsat != 0) 100.0 * reusedUnsat / unsat else 0.0
         return """
             cnt = $cnt, sat = $sat,
             unsat = $unsat, unknown = $unknown,
-            reusedUnsat = $reusedUnsat (${String.format("%.2f", percentage)}%)
+            reusedUnsat = $reusedUnsat (${String.format("%.2f", percentage)}%),
+            solvingTime = $solvingTime ms, checkingTime = $checkingTime ms,
+            updatingTime = $updatingTime ms, totalTime = ${solvingTime + checkingTime + updatingTime} ms
         """.trimIndent()
     }
 }
@@ -65,9 +77,21 @@ private class StatsCollector {
     private val unsat = AtomicInteger()
     private val unknown = AtomicInteger()
     private val reusedUnsat = AtomicInteger()
+    private val solvingTime = AtomicLong()
+    private val checkingTime = AtomicLong()
+    private val updatingTime = AtomicLong()
 
     val result: StatsEntry
-        get() = StatsEntry(cnt.get(), sat.get(), unsat.get(), unknown.get(), reusedUnsat.get())
+        get() = StatsEntry(
+            cnt.get(),
+            sat.get(),
+            unsat.get(),
+            unknown.get(),
+            reusedUnsat.get(),
+            solvingTime.get(),
+            checkingTime.get(),
+            updatingTime.get(),
+        )
 
     suspend fun update(unsatChecker: KUnsatChecker, path: Path) = with(scriptContext) {
         try {
@@ -80,7 +104,11 @@ private class StatsCollector {
 
             cnt.incrementAndGet()
 
-            if (unsatChecker.check(assertions)) {
+            val (checkResult, checkingDuration) = measureTimedValue {
+                unsatChecker.check(assertions)
+            }
+            checkingTime.addAndGet(checkingDuration.inWholeMilliseconds)
+            if (checkResult) {
                 unsat.incrementAndGet()
                 reusedUnsat.incrementAndGet()
                 return@with
@@ -93,14 +121,20 @@ private class StatsCollector {
                 }
 
                 assertions.forEach { solver.assertAndTrackAsync(it) }
-                val result = solver.checkAsync(timeout)
+                val (result, solvingDuration) = measureTimedValue {
+                    solver.checkAsync(timeout)
+                }
+                solvingTime.addAndGet(solvingDuration.inWholeMilliseconds)
                 when (result) {
                     KSolverStatus.SAT -> sat.incrementAndGet()
 
                     KSolverStatus.UNSAT -> {
                         unsat.incrementAndGet()
-                        val unsatCore = solver.unsatCoreAsync()
-                        unsatChecker.addUnsatCore(unsatCore)
+                        val updatingDuration = measureTime {
+                            val unsatCore = solver.unsatCoreAsync()
+                            unsatChecker.addUnsatCore(unsatCore)
+                        }
+                        updatingTime.addAndGet(updatingDuration.inWholeMilliseconds)
                     }
 
                     KSolverStatus.UNKNOWN -> unknown.incrementAndGet()
@@ -110,14 +144,6 @@ private class StatsCollector {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-    }
-
-    suspend fun update(entry: StatsEntry) {
-        cnt.addAndGet(entry.cnt)
-        sat.addAndGet(entry.sat)
-        unsat.addAndGet(entry.unsat)
-        unknown.addAndGet(entry.unknown)
-        reusedUnsat.addAndGet(entry.reusedUnsat)
     }
 }
 
@@ -135,14 +161,21 @@ fun main(args: Array<String>) {
         "unsat" to emptyList<Int>(),
         "unknown" to emptyList<Int>(),
         "reusedUnsat" to emptyList<Int>(),
+        "solvingTime" to emptyList<Long>(),
+        "checkingTime" to emptyList<Long>(),
+        "updatingTime" to emptyList<Long>(),
     )
     val mutex = Mutex()
+    val benchSemaphore = Semaphore(benchmarkPermits)
 
     BenchmarkExecutor {
         object {
             val localStats = StatsCollector()
             val unsatChecker = buildUnsatChecker()
         }
+    }.onNewBenchmark {
+        benchSemaphore.acquire()
+        true
     }.onNewSmtFile {
         localStats.update(unsatChecker, it)
     }.onBenchmarkEnd { benchName ->
@@ -152,12 +185,14 @@ fun main(args: Array<String>) {
             globalStats += result
             smtStats = smtStats.append(
                 benchName, result.cnt, result.sat, result.unsat,
-                result.unknown, result.reusedUnsat
+                result.unknown, result.reusedUnsat, result.solvingTime,
+                result.checkingTime, result.updatingTime,
             )
             println("$benchName results:")
             println(result)
             println()
         }
+        benchSemaphore.release()
     }.onEnd {
         println("Global results:")
         println(globalStats)

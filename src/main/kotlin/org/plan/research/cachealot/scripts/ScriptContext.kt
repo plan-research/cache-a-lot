@@ -11,10 +11,11 @@ class ScriptContext {
     val parser = KZ3SMTLibParser(ctx)
     val timeout = 5.seconds
     val seed = 42
+    val poolSize = 8
     val portfolioSolverManager: KPortfolioSolverManager =
         KPortfolioSolverManager(
             solvers = listOf(KZ3Solver::class),
-            portfolioPoolSize = 8,
+            portfolioPoolSize = poolSize,
             hardTimeout = timeout * 2,
             workerProcessIdleTimeout = 10.seconds,
         )
