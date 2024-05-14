@@ -10,8 +10,8 @@ import kotlinx.coroutines.sync.withLock
 import org.jetbrains.kotlinx.dataframe.api.append
 import org.jetbrains.kotlinx.dataframe.api.dataFrameOf
 import org.jetbrains.kotlinx.dataframe.io.writeCSV
-import org.plan.research.cachealot.KBoolExprs
 import org.plan.research.cachealot.checker.KUnsatChecker
+import org.plan.research.cachealot.checker.KUnsatCheckerFactory
 import org.plan.research.cachealot.scripts.BenchmarkExecutor
 import org.plan.research.cachealot.scripts.ExecutionMode
 import org.plan.research.cachealot.scripts.ScriptContext
@@ -28,14 +28,8 @@ private val executionMode = ExecutionMode.BENCH_PARALLEL
 private val coroutineScope = Dispatchers.Default
 private val benchmarkPermits = scriptContext.poolSize
 
-private val emptyChecker: KUnsatChecker
-    get() = object : KUnsatChecker {
-        override suspend fun addUnsatCore(unsatCore: KBoolExprs) {}
-        override suspend fun check(exprs: KBoolExprs): Boolean = false
-    }
-
 private fun buildUnsatChecker(): KUnsatChecker {
-    return emptyChecker
+    return KUnsatCheckerFactory.create()
 }
 
 private data class StatsEntry(
