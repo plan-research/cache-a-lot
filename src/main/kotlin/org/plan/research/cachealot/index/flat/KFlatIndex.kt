@@ -1,6 +1,7 @@
-package org.plan.research.cachealot.index
+package org.plan.research.cachealot.index.flat
 
 import kotlinx.coroutines.flow.Flow
+import org.plan.research.cachealot.index.KIndex
 
 abstract class KFlatIndex<V> : KIndex<Unit, V> {
     abstract suspend fun getCandidates(): Flow<V>
