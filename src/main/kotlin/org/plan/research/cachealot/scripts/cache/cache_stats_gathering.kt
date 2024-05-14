@@ -12,9 +12,11 @@ import org.jetbrains.kotlinx.dataframe.api.dataFrameOf
 import org.jetbrains.kotlinx.dataframe.io.writeCSV
 import org.plan.research.cachealot.checker.KUnsatChecker
 import org.plan.research.cachealot.checker.KUnsatCheckerFactory
+import org.plan.research.cachealot.index.flat.KRandomIndex
 import org.plan.research.cachealot.scripts.BenchmarkExecutor
 import org.plan.research.cachealot.scripts.ExecutionMode
 import org.plan.research.cachealot.scripts.ScriptContext
+import org.plan.research.cachealot.testers.KSimpleTester
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.io.path.Path
@@ -29,7 +31,11 @@ private val coroutineScope = Dispatchers.Default
 private val benchmarkPermits = scriptContext.poolSize
 
 private fun buildUnsatChecker(): KUnsatChecker {
-    return KUnsatCheckerFactory.create()
+//    return KUnsatCheckerFactory.create()
+    return KUnsatCheckerFactory.create(
+        KSimpleTester(),
+        KRandomIndex(10)
+    )
 }
 
 private data class StatsEntry(
