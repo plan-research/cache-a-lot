@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<configuration>
+
+    <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>[%-5p] - %m%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="fileLogger" class="ch.qos.logback.core.FileAppender">
+        <file>cache-a-lot.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5p][%c] - %m%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="statLogger" class="ch.qos.logback.core.FileAppender">
+        <file>stats.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>%m%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="asyncFileLogger" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="fileLogger"/>
+    </appender>
+    <appender name="asyncStdout" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="stdout"/>
+    </appender>
+    <appender name="asyncStatLogger" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="statLogger"/>
+    </appender>
+
+    <logger name="org.plan.research.cachealot" level="INFO"/>
+    <logger name="KScriptLogger" level="INFO"/>
+
+    <logger name="KStatLogger" level="ALL" additivity="false">
+        <appender-ref ref="asyncStatLogger"/>
+    </logger>
+
+    <root level="OFF">
+        <appender-ref ref="asyncFileLogger"/>
+        <appender-ref ref="asyncStdout"/>
+    </root>
+</configuration>

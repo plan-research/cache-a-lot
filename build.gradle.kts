@@ -19,6 +19,9 @@ dependencies {
 
     implementation(libs.kotlinx.dataframe)
 
+    implementation(libs.kotlin.logging.jvm)
+    implementation(libs.logback.classic)
+
     testImplementation(kotlin("test"))
 }
 

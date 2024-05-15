@@ -10,18 +10,23 @@ import kotlinx.coroutines.sync.withLock
 import org.jetbrains.kotlinx.dataframe.api.append
 import org.jetbrains.kotlinx.dataframe.api.dataFrameOf
 import org.jetbrains.kotlinx.dataframe.io.writeCSV
+import org.plan.research.cachealot.KBoolExprs
 import org.plan.research.cachealot.checker.KUnsatChecker
 import org.plan.research.cachealot.checker.KUnsatCheckerFactory
 import org.plan.research.cachealot.index.flat.KRandomIndex
+import org.plan.research.cachealot.index.logging.withCandidatesNumberLog
 import org.plan.research.cachealot.scripts.BenchmarkExecutor
 import org.plan.research.cachealot.scripts.ExecutionMode
 import org.plan.research.cachealot.scripts.ScriptContext
+import org.plan.research.cachealot.scripts.scriptLogger
+import org.plan.research.cachealot.statLogger
 import org.plan.research.cachealot.testers.KSimpleTester
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.io.path.Path
 import kotlin.io.path.createDirectory
 import kotlin.io.path.div
+import kotlin.io.path.nameWithoutExtension
 import kotlin.time.measureTime
 import kotlin.time.measureTimedValue
 
@@ -30,11 +35,12 @@ private val executionMode = ExecutionMode.BENCH_PARALLEL
 private val coroutineScope = Dispatchers.Default
 private val benchmarkPermits = scriptContext.poolSize
 
-private fun buildUnsatChecker(): KUnsatChecker {
+private fun buildUnsatChecker(name: String): KUnsatChecker {
 //    return KUnsatCheckerFactory.create()
     return KUnsatCheckerFactory.create(
         KSimpleTester(),
-        KRandomIndex(10)
+        KRandomIndex<KBoolExprs>(10)
+            .withCandidatesNumberLog("$name index")
     )
 }
 
@@ -71,7 +77,7 @@ private data class StatsEntry(
     }
 }
 
-private class StatsCollector {
+private class StatsCollector(private val name: String) {
     private val cnt = AtomicInteger()
     private val sat = AtomicInteger()
     private val unsat = AtomicInteger()
@@ -94,6 +100,7 @@ private class StatsCollector {
         )
 
     suspend fun update(unsatChecker: KUnsatChecker, path: Path) = with(scriptContext) {
+        val fullName = "$name ${path.nameWithoutExtension}"
         try {
             val assertions = parser.parse(path).flatMap {
                 when (it) {
@@ -106,6 +113,9 @@ private class StatsCollector {
 
             val (checkResult, checkingDuration) = measureTimedValue {
                 unsatChecker.check(assertions)
+            }
+            statLogger.info {
+                "$fullName check: $checkResult, ${checkingDuration.inWholeMilliseconds}"
             }
             checkingTime.addAndGet(checkingDuration.inWholeMilliseconds)
             if (checkResult) {
@@ -124,6 +134,9 @@ private class StatsCollector {
                 val (result, solvingDuration) = measureTimedValue {
                     solver.checkAsync(timeout)
                 }
+                statLogger.info {
+                    "$fullName solve: $result, ${solvingDuration.inWholeMilliseconds}"
+                }
                 solvingTime.addAndGet(solvingDuration.inWholeMilliseconds)
                 when (result) {
                     KSolverStatus.SAT -> sat.incrementAndGet()
@@ -133,6 +146,9 @@ private class StatsCollector {
                         val updatingDuration = measureTime {
                             val unsatCore = solver.unsatCoreAsync()
                             unsatChecker.addUnsatCore(unsatCore)
+                        }
+                        statLogger.info {
+                            "$fullName update: ${updatingDuration.inWholeMilliseconds}"
                         }
                         updatingTime.addAndGet(updatingDuration.inWholeMilliseconds)
                     }
@@ -170,15 +186,18 @@ fun main(args: Array<String>) {
 
     BenchmarkExecutor {
         object {
-            val localStats = StatsCollector()
-            val unsatChecker = buildUnsatChecker()
+            val localStats = StatsCollector(it)
+            val unsatChecker = buildUnsatChecker(it)
         }
     }.onNewBenchmark {
         benchSemaphore.acquire()
+        scriptLogger.debug { "New Benchmark: $it" }
         true
     }.onNewSmtFile {
+        scriptLogger.debug { "New Smt File: $it" }
         localStats.update(unsatChecker, it)
     }.onBenchmarkEnd { benchName ->
+        scriptLogger.debug { "Benchmark ended: $benchName" }
         val result = localStats.result
 
         mutex.withLock {
@@ -188,15 +207,23 @@ fun main(args: Array<String>) {
                 result.unknown, result.reusedUnsat, result.solvingTime,
                 result.checkingTime, result.updatingTime,
             )
-            println("$benchName results:")
-            println(result)
-            println()
+            scriptLogger.info {
+                """
+                    $benchName results:
+                    $result
+                    
+                """.trimIndent()
+            }
         }
         benchSemaphore.release()
     }.onEnd {
-        println("Global results:")
-        println(globalStats)
-        println()
+        scriptLogger.info {
+            """
+                Global results:
+                $globalStats
+                
+            """.trimIndent()
+        }
 
         smtStats.writeCSV(outputPath.div("smtData.csv").toFile())
     }.execute(executionMode, coroutineScope, path)
