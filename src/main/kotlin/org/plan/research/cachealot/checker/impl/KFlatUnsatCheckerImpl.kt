@@ -1,8 +1,9 @@
-package org.plan.research.cachealot.checker
+package org.plan.research.cachealot.checker.impl
 
 import kotlinx.coroutines.flow.firstOrNull
 import org.plan.research.cachealot.KBoolExprs
 import org.plan.research.cachealot.KFormulaeFlatIndex
+import org.plan.research.cachealot.checker.KUnsatChecker
 import org.plan.research.cachealot.testers.KUnsatTester
 
 class KFlatUnsatCheckerImpl(

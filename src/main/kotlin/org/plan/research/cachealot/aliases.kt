@@ -2,8 +2,8 @@ package org.plan.research.cachealot
 
 import io.ksmt.expr.KExpr
 import io.ksmt.sort.KBoolSort
-import org.plan.research.cachealot.index.flat.KFlatIndex
 import org.plan.research.cachealot.index.KIndex
+import org.plan.research.cachealot.index.flat.KFlatIndex
 
 typealias KBoolExprs = List<KExpr<KBoolSort>>
 typealias KFormulaeIndex<K> = KIndex<K, KBoolExprs>

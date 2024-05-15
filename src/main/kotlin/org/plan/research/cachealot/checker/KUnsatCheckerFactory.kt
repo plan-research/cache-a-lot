@@ -2,6 +2,9 @@ package org.plan.research.cachealot.checker
 
 import org.plan.research.cachealot.KFormulaeFlatIndex
 import org.plan.research.cachealot.KFormulaeIndex
+import org.plan.research.cachealot.checker.impl.KEmptyUnsatChecker
+import org.plan.research.cachealot.checker.impl.KFlatUnsatCheckerImpl
+import org.plan.research.cachealot.checker.impl.KUnsatCheckerImpl
 import org.plan.research.cachealot.index.KKeyComputer
 import org.plan.research.cachealot.testers.KUnsatTester
 
