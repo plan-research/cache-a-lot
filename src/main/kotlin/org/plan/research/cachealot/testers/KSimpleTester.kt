@@ -1,15 +1,41 @@
 package org.plan.research.cachealot.testers
 
-import io.ksmt.expr.KExpr
-import io.ksmt.sort.KBoolSort
+import io.ksmt.expr.*
 import org.plan.research.cachealot.KBoolExprs
 
 class KSimpleTester : KUnsatTester {
 
-    private fun KExpr<KBoolSort>.str(): String = buildString { print(this) }
+    private inline fun <T> listEquals(
+        lhs: List<T>, rhs: List<T>,
+        eq: (T, T) -> Boolean = { l, r -> l == r }
+    ): Boolean = lhs.size == rhs.size && lhs.zip(rhs).all { eq(it.first, it.second) }
+
+    private suspend fun equals(lhs: KExpr<*>, rhs: KExpr<*>): Boolean {
+        if (lhs::class != rhs::class) return false
+        return when (lhs) {
+            is KApp<*, *> -> {
+                rhs as KApp<*, *>
+                lhs.decl == rhs.decl &&
+                        listEquals(lhs.args, rhs.args) { l, r -> equals(l, r) }
+            }
+
+            is KQuantifier -> {
+                rhs as KQuantifier
+                listEquals(lhs.bounds, rhs.bounds) &&
+                        equals(lhs.body, rhs.body)
+            }
+
+            is KArrayLambdaBase<*, *> -> {
+                rhs as KArrayLambdaBase<*, *>
+                listEquals(lhs.indexVarDeclarations, rhs.indexVarDeclarations) &&
+                        equals(lhs.body, rhs.body)
+            }
+
+            else -> false
+        }
+    }
 
     override suspend fun test(unsatCore: KBoolExprs, exprs: KBoolExprs): Boolean {
-        val exprsStrings = exprs.map { it.str() }
-        return unsatCore.all { exprsStrings.contains(it.str()) }
+        return unsatCore.all { expr -> exprs.any { equals(expr, it) } }
     }
 }
