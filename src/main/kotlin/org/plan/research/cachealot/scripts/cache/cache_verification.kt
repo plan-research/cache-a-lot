@@ -7,7 +7,11 @@ import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.io.path.*
 
-class VerificationSubscriber : LinearStatsParserSubscriber {
+class VerificationContext {
+    val results = ConcurrentHashMap<String, KSolverStatus>()
+}
+
+class VerificationSubscriber(private val context: VerificationContext) : LinearStatsParserSubscriber {
     override suspend fun onCheck(parseResult: ParseResultCheck) {
         if (parseResult.value.value) {
             check(parseResult.name, KSolverStatus.UNSAT)
@@ -27,7 +31,7 @@ class VerificationSubscriber : LinearStatsParserSubscriber {
     }
 
     private suspend fun check(name: String, status: KSolverStatus) {
-        results.compute(name) { _, currentStatus ->
+        context.results.compute(name) { _, currentStatus ->
             when (currentStatus) {
                 null, KSolverStatus.UNKNOWN -> status
                 KSolverStatus.SAT -> {
@@ -42,24 +46,21 @@ class VerificationSubscriber : LinearStatsParserSubscriber {
             }
         }
     }
-
-    companion object {
-        private val results = ConcurrentHashMap<String, KSolverStatus>()
-    }
 }
 
 fun run(path1: Path, path2: Path) {
     println("-------------------------------")
     println("${path1.name} - ${path2.name}:")
+    val context = VerificationContext()
     runBlocking {
         launch {
             LinearStatsParser(
-                VerificationSubscriber()
+                VerificationSubscriber(context)
             ).run(path1 / "stats.log")
         }
 
         LinearStatsParser(
-            VerificationSubscriber()
+            VerificationSubscriber(context)
         ).run(path2 / "stats.log")
     }
     println("Done!")
@@ -70,6 +71,7 @@ fun run(path1: Path, path2: Path) {
 fun main(args: Array<String>) {
     when (args.size) {
         3 -> {
+            // check two specific stats located in commonPath
             val commonPath = Path(args[0])
             val dataPath1 = commonPath / args[1]
             val dataPath2 = commonPath / args[2]
@@ -77,20 +79,23 @@ fun main(args: Array<String>) {
         }
 
         2 -> {
-            val path = Path(args[0])
+            val commonPath = Path(args[0])
             val dataPath2 = Path(args[1])
-            if (path.listDirectoryEntries().find { it.name == "stats.log" } == null) {
-                path.forEachDirectoryEntry {
+            if (commonPath.listDirectoryEntries().find { it.name == "stats.log" } == null) {
+                // check all stats to one specified stat located in common
+                commonPath.forEachDirectoryEntry {
                     if (it.name != dataPath2.name) {
-                        run(it, path / dataPath2)
+                        run(it, commonPath / dataPath2)
                     }
                 }
             } else {
-                run(path, dataPath2)
+                // check two stats
+                run(commonPath, dataPath2)
             }
         }
 
         1 -> {
+            // check all stats located in path
             val path = Path(args[0])
             val paths = path.listDirectoryEntries()
             for (i in 0 until paths.size) {
