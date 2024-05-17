@@ -1,6 +1,5 @@
 package org.plan.research.cachealot.scripts.cache
 
-import com.jetbrains.rd.util.AtomicInteger
 import io.ksmt.expr.KAndExpr
 import io.ksmt.solver.KSolverStatus
 import kotlinx.coroutines.Dispatchers
@@ -22,6 +21,7 @@ import org.plan.research.cachealot.scripts.scriptLogger
 import org.plan.research.cachealot.statLogger
 import org.plan.research.cachealot.testers.KSimpleTester
 import java.nio.file.Path
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.io.path.Path
 import kotlin.io.path.createDirectory
@@ -208,21 +208,13 @@ fun main(args: Array<String>) {
                 result.checkingTime, result.updatingTime,
             )
             scriptLogger.info {
-                """
-                    $benchName results:
-                    $result
-                    
-                """.trimIndent()
+                "$benchName results:\n" + "$result"
             }
         }
         benchSemaphore.release()
     }.onEnd {
         scriptLogger.info {
-            """
-                Global results:
-                $globalStats
-                
-            """.trimIndent()
+            "Global results:\n" + "$globalStats"
         }
 
         smtStats.writeCSV(outputPath.div("smtData.csv").toFile())
