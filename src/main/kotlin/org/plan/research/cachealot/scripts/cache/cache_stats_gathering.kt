@@ -2,7 +2,6 @@ package org.plan.research.cachealot.scripts.cache
 
 import io.ksmt.expr.KAndExpr
 import io.ksmt.solver.KSolverStatus
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
@@ -13,7 +12,6 @@ import org.plan.research.cachealot.KBoolExprs
 import org.plan.research.cachealot.checker.KUnsatChecker
 import org.plan.research.cachealot.checker.KUnsatCheckerFactory
 import org.plan.research.cachealot.index.flat.KListIndex
-import org.plan.research.cachealot.index.flat.KRandomIndex
 import org.plan.research.cachealot.index.logging.withCandidatesNumberLog
 import org.plan.research.cachealot.scripts.BenchmarkExecutor
 import org.plan.research.cachealot.scripts.ExecutionMode
@@ -24,6 +22,7 @@ import org.plan.research.cachealot.testers.KSimpleTester
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.io.path.Path
 import kotlin.io.path.createDirectory
 import kotlin.io.path.div
@@ -32,8 +31,8 @@ import kotlin.time.measureTime
 import kotlin.time.measureTimedValue
 
 private val scriptContext = ScriptContext()
-private val executionMode = ExecutionMode.BENCH_PARALLEL
-private val coroutineScope = Dispatchers.Default
+private val executionMode = ExecutionMode.NONE_PARALLEL
+private val coroutineScope = EmptyCoroutineContext
 private val benchmarkPermits = scriptContext.poolSize
 
 private fun buildUnsatChecker(name: String): KUnsatChecker {
@@ -125,36 +124,71 @@ private class StatsCollector(private val name: String) {
                 return@with
             }
 
-            portfolioSolverManager.createPortfolioSolver(ctx).use { solver ->
-                solver.configureAsync {
-                    setIntParameter("random_seed", seed)
-                    setIntParameter("seed", seed)
-                }
-
-                assertions.forEach { solver.assertAndTrackAsync(it) }
-                val (result, solvingDuration) = measureTimedValue {
-                    solver.checkAsync(timeout)
-                }
-                statLogger.info {
-                    "$fullName solve: $result, ${solvingDuration.inWholeMilliseconds}"
-                }
-                solvingTime.addAndGet(solvingDuration.inWholeMilliseconds)
-                when (result) {
-                    KSolverStatus.SAT -> sat.incrementAndGet()
-
-                    KSolverStatus.UNSAT -> {
-                        unsat.incrementAndGet()
-                        val updatingDuration = measureTime {
-                            val unsatCore = solver.unsatCoreAsync()
-                            unsatChecker.addUnsatCore(unsatCore)
-                        }
-                        statLogger.info {
-                            "$fullName update: ${updatingDuration.inWholeMilliseconds}"
-                        }
-                        updatingTime.addAndGet(updatingDuration.inWholeMilliseconds)
+            if (executionMode == ExecutionMode.NONE_PARALLEL) {
+                z3Solver.use { solver ->
+                    solver.configure {
+                        setIntParameter("random_seed", seed)
+                        setIntParameter("seed", seed)
                     }
 
-                    KSolverStatus.UNKNOWN -> unknown.incrementAndGet()
+                    assertions.forEach { solver.assertAndTrack(it) }
+                    val (result, solvingDuration) = measureTimedValue {
+                        solver.check(timeout)
+                    }
+                    statLogger.info {
+                        "$fullName solve: $result, ${solvingDuration.inWholeMilliseconds}"
+                    }
+                    solvingTime.addAndGet(solvingDuration.inWholeMilliseconds)
+                    when (result) {
+                        KSolverStatus.SAT -> sat.incrementAndGet()
+
+                        KSolverStatus.UNSAT -> {
+                            unsat.incrementAndGet()
+                            val updatingDuration = measureTime {
+                                val unsatCore = solver.unsatCore()
+                                unsatChecker.addUnsatCore(unsatCore)
+                            }
+                            statLogger.info {
+                                "$fullName update: ${updatingDuration.inWholeMilliseconds}"
+                            }
+                            updatingTime.addAndGet(updatingDuration.inWholeMilliseconds)
+                        }
+
+                        KSolverStatus.UNKNOWN -> unknown.incrementAndGet()
+                    }
+                }
+            } else {
+                portfolioSolverManager.createPortfolioSolver(ctx).use { solver ->
+                    solver.configureAsync {
+                        setIntParameter("random_seed", seed)
+                        setIntParameter("seed", seed)
+                    }
+
+                    assertions.forEach { solver.assertAndTrackAsync(it) }
+                    val (result, solvingDuration) = measureTimedValue {
+                        solver.checkAsync(timeout)
+                    }
+                    statLogger.info {
+                        "$fullName solve: $result, ${solvingDuration.inWholeMilliseconds}"
+                    }
+                    solvingTime.addAndGet(solvingDuration.inWholeMilliseconds)
+                    when (result) {
+                        KSolverStatus.SAT -> sat.incrementAndGet()
+
+                        KSolverStatus.UNSAT -> {
+                            unsat.incrementAndGet()
+                            val updatingDuration = measureTime {
+                                val unsatCore = solver.unsatCoreAsync()
+                                unsatChecker.addUnsatCore(unsatCore)
+                            }
+                            statLogger.info {
+                                "$fullName update: ${updatingDuration.inWholeMilliseconds}"
+                            }
+                            updatingTime.addAndGet(updatingDuration.inWholeMilliseconds)
+                        }
+
+                        KSolverStatus.UNKNOWN -> unknown.incrementAndGet()
+                    }
                 }
             }
 
@@ -220,5 +254,4 @@ fun main(args: Array<String>) {
 
         smtStats.writeCSV(outputPath.div("smtData.csv").toFile())
     }.execute(executionMode, coroutineScope, path)
-
 }
