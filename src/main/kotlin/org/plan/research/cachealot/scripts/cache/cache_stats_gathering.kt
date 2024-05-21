@@ -12,6 +12,7 @@ import org.plan.research.cachealot.KBoolExprs
 import org.plan.research.cachealot.checker.KUnsatChecker
 import org.plan.research.cachealot.checker.KUnsatCheckerFactory
 import org.plan.research.cachealot.index.flat.KListIndex
+import org.plan.research.cachealot.index.flat.KRandomIndex
 import org.plan.research.cachealot.index.logging.withCandidatesNumberLog
 import org.plan.research.cachealot.scripts.BenchmarkExecutor
 import org.plan.research.cachealot.scripts.ExecutionMode
@@ -39,7 +40,8 @@ private fun buildUnsatChecker(name: String): KUnsatChecker {
 //    return KUnsatCheckerFactory.create()
     return KUnsatCheckerFactory.create(
         KSimpleTester(),
-        KListIndex<KBoolExprs>()
+//        KListIndex<KBoolExprs>()
+        KRandomIndex<KBoolExprs>(10)
             .withCandidatesNumberLog("$name index")
     )
 }
