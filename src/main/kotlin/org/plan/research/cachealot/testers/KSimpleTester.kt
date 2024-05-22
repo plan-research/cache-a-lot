@@ -1,6 +1,9 @@
 package org.plan.research.cachealot.testers
 
-import io.ksmt.expr.*
+import io.ksmt.expr.KApp
+import io.ksmt.expr.KArrayLambdaBase
+import io.ksmt.expr.KExpr
+import io.ksmt.expr.KQuantifier
 import org.plan.research.cachealot.KBoolExprs
 
 class KSimpleTester : KUnsatTester {
@@ -11,7 +14,7 @@ class KSimpleTester : KUnsatTester {
     ): Boolean = lhs.size == rhs.size && lhs.zip(rhs).all { eq(it.first, it.second) }
 
     private suspend fun equals(lhs: KExpr<*>, rhs: KExpr<*>): Boolean {
-        if (lhs::class != rhs::class) return false
+        if (lhs::class != rhs::class || lhs.sort != rhs.sort) return false
         return when (lhs) {
             is KApp<*, *> -> {
                 rhs as KApp<*, *>
