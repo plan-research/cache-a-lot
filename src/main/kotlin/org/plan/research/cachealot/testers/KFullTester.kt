@@ -4,8 +4,10 @@ import io.ksmt.KContext
 import io.ksmt.decl.KDecl
 import io.ksmt.expr.*
 import kotlinx.collections.immutable.PersistentMap
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.plus
 import org.plan.research.cachealot.KBoolExprs
+import org.plan.research.cachealot.structEquals
 
 class KFullTester(private val ctx: KContext) : KUnsatTester {
     class SubstitutionException : RuntimeException()
@@ -41,21 +43,21 @@ class KFullTester(private val ctx: KContext) : KUnsatTester {
 
         infix fun KDecl<*>.eq(decl: KDecl<*>) {
             assert { sort == decl.sort }
-            if ((declMap[this] ?: this) != decl) {
+            if (!(declMap[this] structEquals decl)) {
                 assert { this !in declMap }
                 declMap = declMap + (this to decl)
             }
         }
 
         infix fun List<KDecl<*>>.eqDecls(decls: List<KDecl<*>>) {
-            assert { size != decls.size }
+            assert { size == decls.size }
             for (i in indices) {
                 get(i) eq decls[i]
             }
         }
 
         infix fun List<KExpr<*>>.eqExprs(exprs: List<KExpr<*>>) {
-            assert { size != exprs.size }
+            assert { size == exprs.size }
             for (i in indices) {
                 get(i) eq exprs[i]
             }
@@ -71,14 +73,14 @@ class KFullTester(private val ctx: KContext) : KUnsatTester {
                         // variable
                         decl eq expr.decl
                     } else {
-                        assert { decl == expr.decl }
+                        assert { decl structEquals expr.decl }
                     }
                     args eqExprs expr.args
                 }
 
                 is KApp<*, *> -> {
                     expr as KApp<*, *>
-                    assert { decl == expr.decl }
+                    assert { decl structEquals expr.decl }
                     args eqExprs expr.args
                 }
 
@@ -111,8 +113,8 @@ class KFullTester(private val ctx: KContext) : KUnsatTester {
 
     override suspend fun test(unsatCore: KBoolExprs, exprs: KBoolExprs): Boolean {
         val queue = ArrayDeque<StackEntry>()
+        queue.addLast(StackEntry(0, SubstitutionMonadHolder(SubstitutionMonad(persistentMapOf()))))
         while (queue.isNotEmpty()) {
-            // dfs
             val (index, monad) = queue.removeLast()
             val lhs = unsatCore[index]
             for (rhs in exprs) {

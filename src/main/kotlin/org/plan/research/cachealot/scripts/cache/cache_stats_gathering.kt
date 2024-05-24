@@ -1,7 +1,9 @@
 package org.plan.research.cachealot.scripts.cache
 
+import com.jetbrains.rd.util.printlnError
 import io.ksmt.expr.KAndExpr
 import io.ksmt.solver.KSolverStatus
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
@@ -19,6 +21,7 @@ import org.plan.research.cachealot.scripts.ExecutionMode
 import org.plan.research.cachealot.scripts.ScriptContext
 import org.plan.research.cachealot.scripts.scriptLogger
 import org.plan.research.cachealot.statLogger
+import org.plan.research.cachealot.testers.KFullTester
 import org.plan.research.cachealot.testers.KSimpleTester
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
@@ -28,18 +31,23 @@ import kotlin.io.path.Path
 import kotlin.io.path.createDirectory
 import kotlin.io.path.div
 import kotlin.io.path.nameWithoutExtension
+import kotlin.system.exitProcess
 import kotlin.time.measureTime
 import kotlin.time.measureTimedValue
 
 private val scriptContext = ScriptContext()
-private val executionMode = ExecutionMode.NONE_PARALLEL
-private val coroutineScope = EmptyCoroutineContext
+
 private val benchmarkPermits = scriptContext.poolSize
+private val executionMode = ExecutionMode.BENCH_PARALLEL
+private val coroutineScope = Dispatchers.Default
+//private val executionMode = ExecutionMode.NONE_PARALLEL
+//private val coroutineScope = EmptyCoroutineContext
 
 private fun buildUnsatChecker(name: String): KUnsatChecker {
 //    return KUnsatCheckerFactory.create()
     return KUnsatCheckerFactory.create(
-        KSimpleTester(),
+        KFullTester(scriptContext.ctx),
+//        KSimpleTester(),
 //        KListIndex<KBoolExprs>()
         KRandomIndex<KBoolExprs>(10)
             .withCandidatesNumberLog("$name index")

@@ -5,6 +5,7 @@ import io.ksmt.expr.KArrayLambdaBase
 import io.ksmt.expr.KExpr
 import io.ksmt.expr.KQuantifier
 import org.plan.research.cachealot.KBoolExprs
+import org.plan.research.cachealot.structEquals
 
 class KSimpleTester : KUnsatTester {
 
@@ -18,19 +19,19 @@ class KSimpleTester : KUnsatTester {
         return when (lhs) {
             is KApp<*, *> -> {
                 rhs as KApp<*, *>
-                lhs.decl == rhs.decl &&
+                lhs.decl structEquals rhs.decl &&
                         listEquals(lhs.args, rhs.args) { l, r -> equals(l, r) }
             }
 
             is KQuantifier -> {
                 rhs as KQuantifier
-                listEquals(lhs.bounds, rhs.bounds) &&
+                listEquals(lhs.bounds, rhs.bounds) { l, r -> l structEquals r } &&
                         equals(lhs.body, rhs.body)
             }
 
             is KArrayLambdaBase<*, *> -> {
                 rhs as KArrayLambdaBase<*, *>
-                listEquals(lhs.indexVarDeclarations, rhs.indexVarDeclarations) &&
+                listEquals(lhs.indexVarDeclarations, rhs.indexVarDeclarations) { l, r -> l structEquals r } &&
                         equals(lhs.body, rhs.body)
             }
 
