@@ -8,6 +8,7 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.plus
 import org.plan.research.cachealot.KBoolExprs
 import org.plan.research.cachealot.structEquals
+import org.plan.research.cachealot.toCachedSequence
 
 class KFullOptTester(private val ctx: KContext) : KUnsatTester {
     class SubstitutionException : RuntimeException()
@@ -41,7 +42,7 @@ class KFullOptTester(private val ctx: KContext) : KUnsatTester {
                     assert { it structEquals value }
                 }
             }
-            declMap = greater.putAll(smaller)
+            declMap = declMap.putAll(other.declMap)
         }
 
         inline fun scoped(decls: List<KDecl<*>> = emptyList(), block: () -> Unit) {
@@ -127,11 +128,11 @@ class KFullOptTester(private val ctx: KContext) : KUnsatTester {
     }
 
     override suspend fun test(unsatCore: KBoolExprs, exprs: KBoolExprs): Boolean {
-        val substitutions = unsatCore.fold(listOf(SubstitutionMonadHolder())) { monads, core ->
-            if (monads.isEmpty()) return false
+        val substitutions = unsatCore.fold(sequenceOf(SubstitutionMonadHolder())) { monads, core ->
+            if (monads.firstOrNull() == null) return false
             val newMonads = exprs.mapNotNull { SubstitutionMonadHolder().run { core eq it } }
-            monads.flatMap { old -> newMonads.mapNotNull { old.merge(it) } }
+            monads.flatMap { old -> newMonads.mapNotNull { old.merge(it) } }.iterator().toCachedSequence()
         }
-        return substitutions.isNotEmpty()
+        return substitutions.firstOrNull() != null
     }
 }

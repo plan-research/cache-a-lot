@@ -214,3 +214,43 @@ reusedUnsat = 38 (84.44%),
 solvingTime = 1338 ms, checkingTime = 219533 ms,
 updatingTime = 143 ms, totalTime = 221014 ms
 
+2024-05-26 18:36:13.834 [INFO ][KScriptLogger]
+FASTJSON-32_1 results:
+cnt = 134, sat = 1,
+unsat = 98, unknown = 35,
+reusedUnsat = 5 (5.10%),
+solvingTime = 200086 ms, checkingTime = 290086072 ms,
+updatingTime = 1824 ms, totalTime = 290287982 ms
+
+2024-05-26 18:36:55.564 [INFO ][KScriptLogger]
+FASTJSON-85_1 results:
+cnt = 79, sat = 64,
+unsat = 15, unknown = 0,
+reusedUnsat = 3 (20.00%),
+solvingTime = 1024 ms, checkingTime = 23714 ms,
+updatingTime = 148 ms, totalTime = 24886 ms
+
+2024-05-26 18:37:05.123 [INFO ][KScriptLogger]
+FASTJSON-59_1 results:
+cnt = 109, sat = 107,
+unsat = 2, unknown = 0,
+reusedUnsat = 1 (50.00%),
+solvingTime = 942 ms, checkingTime = 672 ms,
+updatingTime = 24 ms, totalTime = 1638 ms
+
+2024-05-27 12:22:58.677 [INFO ][KScriptLogger]
+FASTJSON-105_1 results:
+cnt = 332, sat = 252,
+unsat = 73, unknown = 7,
+reusedUnsat = 36 (49.32%),
+solvingTime = 43324 ms, checkingTime = 412627376 ms,
+updatingTime = 742 ms, totalTime = 412671442 ms
+
+2024-05-27 12:23:06.087 [INFO ][KScriptLogger]
+FASTJSON-64_1 results:
+cnt = 32, sat = 25,
+unsat = 7, unknown = 0,
+reusedUnsat = 1 (14.29%),
+solvingTime = 1758 ms, checkingTime = 730 ms,
+updatingTime = 82 ms, totalTime = 2570 ms
+

@@ -1,6 +1,5 @@
 package org.plan.research.cachealot.scripts.cache
 
-import com.jetbrains.rd.util.printlnError
 import io.ksmt.expr.KAndExpr
 import io.ksmt.solver.KSolverStatus
 import kotlinx.coroutines.Dispatchers
@@ -13,7 +12,6 @@ import org.jetbrains.kotlinx.dataframe.io.writeCSV
 import org.plan.research.cachealot.KBoolExprs
 import org.plan.research.cachealot.checker.KUnsatChecker
 import org.plan.research.cachealot.checker.KUnsatCheckerFactory
-import org.plan.research.cachealot.index.flat.KListIndex
 import org.plan.research.cachealot.index.flat.KRandomIndex
 import org.plan.research.cachealot.index.logging.withCandidatesNumberLog
 import org.plan.research.cachealot.scripts.BenchmarkExecutor
@@ -22,17 +20,13 @@ import org.plan.research.cachealot.scripts.ScriptContext
 import org.plan.research.cachealot.scripts.scriptLogger
 import org.plan.research.cachealot.statLogger
 import org.plan.research.cachealot.testers.KFullOptTester
-import org.plan.research.cachealot.testers.KFullTester
-import org.plan.research.cachealot.testers.KSimpleTester
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
-import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.io.path.Path
 import kotlin.io.path.createDirectory
 import kotlin.io.path.div
 import kotlin.io.path.nameWithoutExtension
-import kotlin.system.exitProcess
 import kotlin.time.measureTime
 import kotlin.time.measureTimedValue
 
@@ -41,8 +35,10 @@ private val scriptContext = ScriptContext()
 private val benchmarkPermits = scriptContext.poolSize
 private val executionMode = ExecutionMode.BENCH_PARALLEL
 private val coroutineScope = Dispatchers.Default
+private val usePortfolio = true
 //private val executionMode = ExecutionMode.NONE_PARALLEL
 //private val coroutineScope = EmptyCoroutineContext
+//private val usePortfolio = false
 
 private fun buildUnsatChecker(name: String): KUnsatChecker {
 //    return KUnsatCheckerFactory.create()
@@ -50,6 +46,7 @@ private fun buildUnsatChecker(name: String): KUnsatChecker {
         KFullOptTester(scriptContext.ctx),
 //        KFullTester(scriptContext.ctx),
 //        KSimpleTester(),
+
 //        KListIndex<KBoolExprs>()
         KRandomIndex<KBoolExprs>(10)
             .withCandidatesNumberLog("$name index")
@@ -136,7 +133,7 @@ private class StatsCollector(private val name: String) {
                 return@with
             }
 
-            if (executionMode == ExecutionMode.NONE_PARALLEL) {
+            if (!usePortfolio) {
                 z3Solver.use { solver ->
                     solver.configure {
                         setIntParameter("random_seed", seed)
