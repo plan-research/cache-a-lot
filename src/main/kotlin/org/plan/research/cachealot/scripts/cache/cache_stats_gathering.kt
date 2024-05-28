@@ -21,6 +21,7 @@ import org.plan.research.cachealot.scripts.ExecutionMode
 import org.plan.research.cachealot.scripts.ScriptContext
 import org.plan.research.cachealot.scripts.scriptLogger
 import org.plan.research.cachealot.statLogger
+import org.plan.research.cachealot.testers.KFullOptTester
 import org.plan.research.cachealot.testers.KFullTester
 import org.plan.research.cachealot.testers.KSimpleTester
 import java.nio.file.Path
@@ -46,7 +47,8 @@ private val coroutineScope = Dispatchers.Default
 private fun buildUnsatChecker(name: String): KUnsatChecker {
 //    return KUnsatCheckerFactory.create()
     return KUnsatCheckerFactory.create(
-        KFullTester(scriptContext.ctx),
+        KFullOptTester(scriptContext.ctx),
+//        KFullTester(scriptContext.ctx),
 //        KSimpleTester(),
 //        KListIndex<KBoolExprs>()
         KRandomIndex<KBoolExprs>(10)
