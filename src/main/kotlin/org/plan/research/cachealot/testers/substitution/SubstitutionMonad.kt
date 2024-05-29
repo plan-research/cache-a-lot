@@ -1,16 +1,13 @@
-package org.plan.research.cachealot.testers
+package org.plan.research.cachealot.testers.substitution
 
 import io.ksmt.decl.KDecl
 import io.ksmt.expr.*
-import kotlinx.collections.immutable.PersistentMap
-import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.plus
 import org.plan.research.cachealot.structEquals
 
-class SubstitutionException : RuntimeException()
+data class SubstitutionMonadHolder<T : SubstitutionMonadState<T>>(val monad: SubstitutionMonad<T>) {
+    constructor(state: T) : this(SubstitutionMonad(state))
 
-data class SubstitutionMonadHolder(val monad: SubstitutionMonad = SubstitutionMonad()) {
-    inline fun run(block: SubstitutionMonad.() -> Unit): SubstitutionMonadHolder? {
+    inline fun run(block: SubstitutionMonad<T>.() -> Unit): SubstitutionMonadHolder<T>? {
         try {
             val newMonad = monad.copy()
             newMonad.block()
@@ -20,66 +17,52 @@ data class SubstitutionMonadHolder(val monad: SubstitutionMonad = SubstitutionMo
         }
     }
 
-    fun merge(other: SubstitutionMonadHolder): SubstitutionMonadHolder? =
+    fun merge(other: SubstitutionMonadHolder<T>): SubstitutionMonadHolder<T>? =
         run { merge(other.monad) }
 }
 
 // Why? Because I feel that way.
-data class SubstitutionMonad(var declMap: PersistentMap<KDecl<*>, KDecl<*>> = persistentMapOf()) {
+data class SubstitutionMonad<T : SubstitutionMonadState<T>>(var state: T) {
 
-    infix fun merge(other: SubstitutionMonad) {
-        val (smaller, greater) = if (declMap.size > other.declMap.size) {
-            other.declMap to declMap
-        } else {
-            declMap to other.declMap
-        }
-        smaller.forEach { (key, value) ->
-            greater[key]?.let {
-                assert { it structEquals value }
-            }
-        }
-        declMap = declMap.putAll(other.declMap)
+    infix fun merge(other: SubstitutionMonad<T>) {
+        state = state.merge(other.state)
     }
 
     inline fun scoped(decls: List<KDecl<*>> = emptyList(), block: () -> Unit) {
-        val old = declMap
+        val old = state
         try {
-            declMap = decls.fold(declMap) { acc, decl -> acc.remove(decl) }
+            state = state.run { removeAll(decls) }
             block()
         } finally {
-            declMap = old
+            state = old
         }
     }
 
-    fun fail() {
-        throw SubstitutionException()
-    }
-
     infix fun KDecl<*>.eq(decl: KDecl<*>) {
-        assert { sort == decl.sort }
-        if (!(declMap[this] structEquals decl)) {
-            assert { this !in declMap }
-            declMap = declMap + (this to decl)
+        substitutionAssert { sort == decl.sort }
+        if (!state.checkSubstitution(this@eq, decl)) {
+            substitutionAssert { !state.hasSubstitutionFor(this) }
+            state = state.substitute(this, decl)
         }
     }
 
     infix fun List<KDecl<*>>.eqDecls(decls: List<KDecl<*>>) {
-        assert { size == decls.size }
+        substitutionAssert { size == decls.size }
         for (i in indices) {
             get(i) eq decls[i]
         }
     }
 
     infix fun List<KExpr<*>>.eqExprs(exprs: List<KExpr<*>>) {
-        assert { size == exprs.size }
+        substitutionAssert { size == exprs.size }
         for (i in indices) {
             get(i) eq exprs[i]
         }
     }
 
     infix fun KExpr<*>.eq(expr: KExpr<*>) {
-        assert { this::class == expr::class }
-        assert { sort == expr.sort }
+        substitutionAssert { this::class == expr::class }
+        substitutionAssert { sort == expr.sort }
         when (this) {
             is KFunctionApp<*> -> {
                 expr as KFunctionApp<*>
@@ -87,14 +70,14 @@ data class SubstitutionMonad(var declMap: PersistentMap<KDecl<*>, KDecl<*>> = pe
                     // variable
                     decl eq expr.decl
                 } else {
-                    assert { decl structEquals expr.decl }
+                    substitutionAssert { decl structEquals expr.decl }
                 }
                 args eqExprs expr.args
             }
 
             is KApp<*, *> -> {
                 expr as KApp<*, *>
-                assert { decl structEquals expr.decl }
+                substitutionAssert { decl structEquals expr.decl }
                 args eqExprs expr.args
             }
 
@@ -114,11 +97,7 @@ data class SubstitutionMonad(var declMap: PersistentMap<KDecl<*>, KDecl<*>> = pe
                 }
             }
 
-            else -> fail()
+            else -> substitutionFail()
         }
-    }
-
-    inline fun assert(block: () -> Boolean) {
-        if (!block()) fail()
     }
 }
