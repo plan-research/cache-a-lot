@@ -16,25 +16,18 @@ data class SubstitutionMonadHolder<T : SubstitutionMonadState<T>>(val monad: Sub
             return null
         }
     }
-
-    fun merge(other: SubstitutionMonadHolder<T>): SubstitutionMonadHolder<T>? =
-        run { merge(other.monad) }
 }
 
 // Why? Because I feel that way.
 data class SubstitutionMonad<T : SubstitutionMonadState<T>>(var state: T) {
 
-    infix fun merge(other: SubstitutionMonad<T>) {
-        state = state.merge(other.state)
-    }
-
     inline fun scoped(decls: List<KDecl<*>> = emptyList(), block: () -> Unit) {
-        val old = state
+        val extracted = state.extract(decls)
         try {
-            state = state.run { removeAll(decls) }
+            state = state.removeAll(decls)
             block()
         } finally {
-            state = old
+            state = state.removeAll(decls).merge(extracted)
         }
     }
 
