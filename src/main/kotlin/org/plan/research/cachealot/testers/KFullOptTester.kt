@@ -16,6 +16,7 @@ class KFullOptTester(private val ctx: KContext) : KUnsatTester {
         val inner: MapSubstitutionMonadState = MapSubstitutionMonadState(),
         val variables: PersistentMap<KDecl<*>, PersistentSet<KDecl<*>>> = persistentHashMapOf(),
         private val ignore: PersistentSet<KDecl<*>> = persistentHashSetOf(),
+        private val possibleTargets: Map<KDecl<*>, Set<*>> = emptyMap(),
     ) : SubstitutionMonadState<OptState> {
         override fun hasSubstitutionFor(origin: KDecl<*>): Boolean =
             inner.hasSubstitutionFor(origin)
@@ -29,39 +30,41 @@ class KFullOptTester(private val ctx: KContext) : KUnsatTester {
         override fun removeAll(origins: Collection<KDecl<*>>): OptState =
             copy(inner.removeAll(origins), variables.removeAll(origins), ignore.addAll(origins))
 
-        override fun substitute(origin: KDecl<*>, target: KDecl<*>): OptState =
-            copy(
+        override fun substitute(origin: KDecl<*>, target: KDecl<*>): OptState {
+            val ignored = origin in ignore
+            if (!ignored) {
+                possibleTargets[origin]?.let {
+                    substitutionAssert { target in it }
+                }
+            }
+            return copy(
                 inner.substitute(origin, target),
-                if (origin in ignore) variables
+                if (ignored) variables
                 else variables.builder().apply {
                     compute(origin) { _, old -> old?.add(target) ?: persistentHashSetOf(target) }
                 }.build()
             )
+        }
 
         override fun merge(other: OptState): OptState =
             copy(inner.merge(other.inner), variables.putAll(other.variables), other.ignore)
     }
 
     override suspend fun test(unsatCore: KBoolExprs, exprs: KBoolExprs): Boolean {
-        val possibleTargets = hashMapOf<KDecl<*>, MutableSet<KDecl<*>>>()
+        val possibleTargets = hashMapOf<KDecl<*>, Set<KDecl<*>>>()
         val states = unsatCore.map { core ->
             var vars = persistentHashMapOf<KDecl<*>, PersistentSet<KDecl<*>>>()
             val result = exprs.mapNotNull {
-                OptState(variables = vars).wrap().run {
+                OptState(
+                    variables = vars,
+                    possibleTargets = possibleTargets,
+                ).wrap().run {
                     core eq it
                     vars = state.variables
                 }?.monad?.state?.inner?.map
             }.takeIf { it.isNotEmpty() } ?: return false
 
-            vars.forEach { (origin, targets) ->
-                when (val oldTargets = possibleTargets[origin]) {
-                    null -> possibleTargets[origin] = targets.toMutableSet()
-                    else -> {
-                        oldTargets.retainAll(targets)
-                        if (oldTargets.isEmpty()) return false
-                    }
-                }
-            }
+            possibleTargets.putAll(vars)
 
             result
         }
