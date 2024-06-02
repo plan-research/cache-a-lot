@@ -1,0 +1,440 @@
+2024-06-01 17:51:11.822 [INFO ][KScriptLogger]
+FASTJSON-39_1 results:
+cnt = 41, sat = 33,
+unsat = 8, unknown = 0,
+reusedUnsat = 1 (12.50%),
+solvingTime = 12140 ms, checkingTime = 324 ms,
+updatingTime = 0 ms, totalTime = 12464 ms
+
+2024-06-01 17:51:11.927 [INFO ][KScriptLogger]
+FASTJSON-17_1 results:
+cnt = 8, sat = 6,
+unsat = 2, unknown = 0,
+reusedUnsat = 0 (0.00%),
+solvingTime = 18 ms, checkingTime = 0 ms,
+updatingTime = 0 ms, totalTime = 18 ms
+
+2024-06-01 17:51:41.627 [INFO ][KScriptLogger]
+SPOON-163_1 results:
+cnt = 28, sat = 21,
+unsat = 3, unknown = 4,
+reusedUnsat = 1 (33.33%),
+solvingTime = 25689 ms, checkingTime = 130 ms,
+updatingTime = 0 ms, totalTime = 25819 ms
+
+2024-06-01 17:56:03.454 [INFO ][KScriptLogger]
+SPOON-151_1 results:
+cnt = 1198, sat = 131,
+unsat = 1039, unknown = 28,
+reusedUnsat = 986 (94.90%),
+solvingTime = 167223 ms, checkingTime = 75838 ms,
+updatingTime = 1 ms, totalTime = 243062 ms
+
+2024-06-01 17:56:47.699 [INFO ][KScriptLogger]
+FASTJSON-104_1 results:
+cnt = 102, sat = 78,
+unsat = 21, unknown = 3,
+reusedUnsat = 9 (42.86%),
+solvingTime = 38797 ms, checkingTime = 551 ms,
+updatingTime = 0 ms, totalTime = 39348 ms
+
+2024-06-01 17:56:48.334 [INFO ][KScriptLogger]
+FASTJSON-79_1 results:
+cnt = 113, sat = 2,
+unsat = 111, unknown = 0,
+reusedUnsat = 107 (96.40%),
+solvingTime = 12 ms, checkingTime = 64 ms,
+updatingTime = 0 ms, totalTime = 76 ms
+
+2024-06-01 17:57:51.680 [INFO ][KScriptLogger]
+FASTJSON-49_1 results:
+cnt = 40, sat = 16,
+unsat = 17, unknown = 7,
+reusedUnsat = 6 (35.29%),
+solvingTime = 51200 ms, checkingTime = 4750 ms,
+updatingTime = 0 ms, totalTime = 55950 ms
+
+2024-06-01 17:59:07.891 [INFO ][KScriptLogger]
+GUAVA-174_1 results:
+cnt = 248, sat = 114,
+unsat = 129, unknown = 5,
+reusedUnsat = 92 (71.32%),
+solvingTime = 39369 ms, checkingTime = 21308 ms,
+updatingTime = 0 ms, totalTime = 60677 ms
+
+2024-06-01 17:59:20.818 [INFO ][KScriptLogger]
+GUAVA-249_1 results:
+cnt = 57, sat = 54,
+unsat = 1, unknown = 2,
+reusedUnsat = 0 (0.00%),
+solvingTime = 10143 ms, checkingTime = 63 ms,
+updatingTime = 0 ms, totalTime = 10206 ms
+
+2024-06-01 18:02:10.220 [INFO ][KScriptLogger]
+GUAVA-78_1 results:
+cnt = 169, sat = 96,
+unsat = 60, unknown = 13,
+reusedUnsat = 20 (33.33%),
+solvingTime = 150893 ms, checkingTime = 3245 ms,
+updatingTime = 0 ms, totalTime = 154138 ms
+
+2024-06-01 18:03:21.618 [INFO ][KScriptLogger]
+GUAVA-260_1 results:
+cnt = 479, sat = 238,
+unsat = 236, unknown = 5,
+reusedUnsat = 145 (61.44%),
+solvingTime = 27337 ms, checkingTime = 35152 ms,
+updatingTime = 0 ms, totalTime = 62489 ms
+
+2024-06-01 18:03:26.625 [INFO ][KScriptLogger]
+SPOON-19_1 results:
+cnt = 18, sat = 18,
+unsat = 0, unknown = 0,
+reusedUnsat = 0 (0.00%),
+solvingTime = 3962 ms, checkingTime = 0 ms,
+updatingTime = 0 ms, totalTime = 3962 ms
+
+2024-06-01 18:03:30.773 [INFO ][KScriptLogger]
+SEATA-24_1 results:
+cnt = 36, sat = 14,
+unsat = 22, unknown = 0,
+reusedUnsat = 15 (68.18%),
+solvingTime = 3288 ms, checkingTime = 180 ms,
+updatingTime = 0 ms, totalTime = 3468 ms
+
+2024-06-01 18:04:13.735 [INFO ][KScriptLogger]
+FASTJSON-105_1 results:
+cnt = 332, sat = 252,
+unsat = 73, unknown = 7,
+reusedUnsat = 51 (69.86%),
+solvingTime = 37195 ms, checkingTime = 1463 ms,
+updatingTime = 0 ms, totalTime = 38658 ms
+
+2024-06-01 18:04:15.426 [INFO ][KScriptLogger]
+SPOON-167_1 results:
+cnt = 12, sat = 11,
+unsat = 1, unknown = 0,
+reusedUnsat = 0 (0.00%),
+solvingTime = 1262 ms, checkingTime = 1 ms,
+updatingTime = 0 ms, totalTime = 1263 ms
+
+2024-06-01 18:07:05.058 [INFO ][KScriptLogger]
+FASTJSON-26_1 results:
+cnt = 285, sat = 92,
+unsat = 185, unknown = 8,
+reusedUnsat = 50 (27.03%),
+solvingTime = 120849 ms, checkingTime = 35844 ms,
+updatingTime = 0 ms, totalTime = 156693 ms
+
+2024-06-01 18:07:37.016 [INFO ][KScriptLogger]
+SPOON-159_1 results:
+cnt = 131, sat = 64,
+unsat = 67, unknown = 0,
+reusedUnsat = 45 (67.16%),
+solvingTime = 28004 ms, checkingTime = 1260 ms,
+updatingTime = 0 ms, totalTime = 29264 ms
+
+2024-06-01 18:08:13.627 [INFO ][KScriptLogger]
+SPOON-13_1 results:
+cnt = 23, sat = 5,
+unsat = 12, unknown = 6,
+reusedUnsat = 10 (83.33%),
+solvingTime = 31198 ms, checkingTime = 341 ms,
+updatingTime = 0 ms, totalTime = 31539 ms
+
+2024-06-01 18:08:14.450 [INFO ][KScriptLogger]
+FASTJSON-93_1 results:
+cnt = 85, sat = 45,
+unsat = 40, unknown = 0,
+reusedUnsat = 28 (70.00%),
+solvingTime = 167 ms, checkingTime = 43 ms,
+updatingTime = 0 ms, totalTime = 210 ms
+
+2024-06-01 18:08:52.356 [INFO ][KScriptLogger]
+GUAVA-71_1 results:
+cnt = 209, sat = 122,
+unsat = 83, unknown = 4,
+reusedUnsat = 45 (54.22%),
+solvingTime = 22746 ms, checkingTime = 8671 ms,
+updatingTime = 0 ms, totalTime = 31417 ms
+
+2024-06-01 18:10:33.683 [INFO ][KScriptLogger]
+SPOON-107_1 results:
+cnt = 92, sat = 75,
+unsat = 10, unknown = 7,
+reusedUnsat = 3 (30.00%),
+solvingTime = 92970 ms, checkingTime = 737 ms,
+updatingTime = 0 ms, totalTime = 93707 ms
+
+2024-06-01 18:10:33.704 [INFO ][KScriptLogger]
+SEATA-4_1 results:
+cnt = 1, sat = 1,
+unsat = 0, unknown = 0,
+reusedUnsat = 0 (0.00%),
+solvingTime = 2 ms, checkingTime = 0 ms,
+updatingTime = 0 ms, totalTime = 2 ms
+
+2024-06-01 18:13:15.884 [INFO ][KScriptLogger]
+FASTJSON-50_1 results:
+cnt = 271, sat = 196,
+unsat = 50, unknown = 25,
+reusedUnsat = 23 (46.00%),
+solvingTime = 150244 ms, checkingTime = 4305 ms,
+updatingTime = 0 ms, totalTime = 154549 ms
+
+2024-06-01 18:14:04.193 [INFO ][KScriptLogger]
+GUAVA-197_1 results:
+cnt = 62, sat = 51,
+unsat = 9, unknown = 2,
+reusedUnsat = 7 (77.78%),
+solvingTime = 38421 ms, checkingTime = 2109 ms,
+updatingTime = 0 ms, totalTime = 40530 ms
+
+2024-06-01 18:14:23.313 [INFO ][KScriptLogger]
+GUAVA-275_1 results:
+cnt = 119, sat = 44,
+unsat = 72, unknown = 3,
+reusedUnsat = 51 (70.83%),
+solvingTime = 16936 ms, checkingTime = 534 ms,
+updatingTime = 0 ms, totalTime = 17470 ms
+
+2024-06-01 18:14:24.753 [INFO ][KScriptLogger]
+FASTJSON-72_1 results:
+cnt = 94, sat = 41,
+unsat = 53, unknown = 0,
+reusedUnsat = 30 (56.60%),
+solvingTime = 198 ms, checkingTime = 420 ms,
+updatingTime = 0 ms, totalTime = 618 ms
+
+2024-06-01 18:14:28.902 [INFO ][KScriptLogger]
+FASTJSON-9_1 results:
+cnt = 75, sat = 30,
+unsat = 45, unknown = 0,
+reusedUnsat = 11 (24.44%),
+solvingTime = 2512 ms, checkingTime = 559 ms,
+updatingTime = 0 ms, totalTime = 3071 ms
+
+2024-06-01 18:15:57.674 [INFO ][KScriptLogger]
+FASTJSON-19_1 results:
+cnt = 143, sat = 96,
+unsat = 40, unknown = 7,
+reusedUnsat = 13 (32.50%),
+solvingTime = 79477 ms, checkingTime = 1727 ms,
+updatingTime = 0 ms, totalTime = 81204 ms
+
+2024-06-01 18:16:04.134 [INFO ][KScriptLogger]
+GUAVA-115_1 results:
+cnt = 40, sat = 16,
+unsat = 24, unknown = 0,
+reusedUnsat = 17 (70.83%),
+solvingTime = 5571 ms, checkingTime = 239 ms,
+updatingTime = 0 ms, totalTime = 5810 ms
+
+2024-06-01 18:16:50.648 [INFO ][KScriptLogger]
+SPOON-11_1 results:
+cnt = 15, sat = 9,
+unsat = 0, unknown = 6,
+reusedUnsat = 0 (0.00%),
+solvingTime = 33258 ms, checkingTime = 0 ms,
+updatingTime = 0 ms, totalTime = 33258 ms
+
+2024-06-01 18:20:34.467 [INFO ][KScriptLogger]
+FASTJSON-32_1 results:
+cnt = 134, sat = 4,
+unsat = 98, unknown = 32,
+reusedUnsat = 10 (10.20%),
+solvingTime = 186338 ms, checkingTime = 28559 ms,
+updatingTime = 0 ms, totalTime = 214897 ms
+
+2024-06-01 18:20:52.624 [INFO ][KScriptLogger]
+GUAVA-153_1 results:
+cnt = 50, sat = 45,
+unsat = 2, unknown = 3,
+reusedUnsat = 0 (0.00%),
+solvingTime = 15064 ms, checkingTime = 31 ms,
+updatingTime = 0 ms, totalTime = 15095 ms
+
+2024-06-01 18:20:53.879 [INFO ][KScriptLogger]
+FASTJSON-85_1 results:
+cnt = 79, sat = 64,
+unsat = 15, unknown = 0,
+reusedUnsat = 5 (33.33%),
+solvingTime = 333 ms, checkingTime = 118 ms,
+updatingTime = 0 ms, totalTime = 451 ms
+
+2024-06-01 18:20:55.292 [INFO ][KScriptLogger]
+SEATA-14_1 results:
+cnt = 76, sat = 31,
+unsat = 45, unknown = 0,
+reusedUnsat = 40 (88.89%),
+solvingTime = 418 ms, checkingTime = 322 ms,
+updatingTime = 0 ms, totalTime = 740 ms
+
+2024-06-01 18:23:08.688 [INFO ][KScriptLogger]
+GUAVA-85_1 results:
+cnt = 137, sat = 57,
+unsat = 70, unknown = 10,
+reusedUnsat = 56 (80.00%),
+solvingTime = 87865 ms, checkingTime = 36234 ms,
+updatingTime = 0 ms, totalTime = 124099 ms
+
+2024-06-01 18:23:09.965 [INFO ][KScriptLogger]
+FASTJSON-59_1 results:
+cnt = 109, sat = 107,
+unsat = 2, unknown = 0,
+reusedUnsat = 1 (50.00%),
+solvingTime = 291 ms, checkingTime = 0 ms,
+updatingTime = 0 ms, totalTime = 291 ms
+
+2024-06-01 18:23:15.921 [INFO ][KScriptLogger]
+SEATA-32_1 results:
+cnt = 18, sat = 7,
+unsat = 11, unknown = 0,
+reusedUnsat = 6 (54.55%),
+solvingTime = 5123 ms, checkingTime = 172 ms,
+updatingTime = 0 ms, totalTime = 5295 ms
+
+2024-06-01 18:23:19.355 [INFO ][KScriptLogger]
+FASTJSON-64_1 results:
+cnt = 32, sat = 25,
+unsat = 7, unknown = 0,
+reusedUnsat = 2 (28.57%),
+solvingTime = 2949 ms, checkingTime = 14 ms,
+updatingTime = 0 ms, totalTime = 2963 ms
+
+2024-06-01 18:24:40.274 [INFO ][KScriptLogger]
+GUAVA-45_1 results:
+cnt = 117, sat = 98,
+unsat = 14, unknown = 5,
+reusedUnsat = 11 (78.57%),
+solvingTime = 61014 ms, checkingTime = 5410 ms,
+updatingTime = 0 ms, totalTime = 66424 ms
+
+2024-06-01 18:26:02.133 [INFO ][KScriptLogger]
+SPOON-165_1 results:
+cnt = 41, sat = 12,
+unsat = 17, unknown = 12,
+reusedUnsat = 8 (47.06%),
+solvingTime = 61371 ms, checkingTime = 3318 ms,
+updatingTime = 0 ms, totalTime = 64689 ms
+
+2024-06-01 18:26:02.185 [INFO ][KScriptLogger]
+FASTJSON-25_1 results:
+cnt = 5, sat = 3,
+unsat = 2, unknown = 0,
+reusedUnsat = 1 (50.00%),
+solvingTime = 5 ms, checkingTime = 0 ms,
+updatingTime = 0 ms, totalTime = 5 ms
+
+2024-06-01 18:26:36.000 [INFO ][KScriptLogger]
+SPOON-101_1 results:
+cnt = 27, sat = 15,
+unsat = 8, unknown = 4,
+reusedUnsat = 2 (25.00%),
+solvingTime = 20445 ms, checkingTime = 2158 ms,
+updatingTime = 0 ms, totalTime = 22603 ms
+
+2024-06-01 18:26:37.536 [INFO ][KScriptLogger]
+SEATA-16_1 results:
+cnt = 21, sat = 13,
+unsat = 8, unknown = 0,
+reusedUnsat = 1 (12.50%),
+solvingTime = 1149 ms, checkingTime = 41 ms,
+updatingTime = 0 ms, totalTime = 1190 ms
+
+2024-06-01 18:28:16.489 [INFO ][KScriptLogger]
+GUAVA-110_1 results:
+cnt = 211, sat = 134,
+unsat = 63, unknown = 14,
+reusedUnsat = 28 (44.44%),
+solvingTime = 93227 ms, checkingTime = 1573 ms,
+updatingTime = 0 ms, totalTime = 94800 ms
+
+2024-06-01 18:28:46.942 [INFO ][KScriptLogger]
+FASTJSON-15_1 results:
+cnt = 17, sat = 5,
+unsat = 6, unknown = 6,
+reusedUnsat = 2 (33.33%),
+solvingTime = 30058 ms, checkingTime = 24 ms,
+updatingTime = 0 ms, totalTime = 30082 ms
+
+2024-06-01 18:29:16.568 [INFO ][KScriptLogger]
+SPOON-9_1 results:
+cnt = 71, sat = 63,
+unsat = 8, unknown = 0,
+reusedUnsat = 2 (25.00%),
+solvingTime = 19551 ms, checkingTime = 3570 ms,
+updatingTime = 0 ms, totalTime = 23121 ms
+
+2024-06-01 18:29:52.578 [INFO ][KScriptLogger]
+SPOON-169_1 results:
+cnt = 17, sat = 6,
+unsat = 5, unknown = 6,
+reusedUnsat = 2 (40.00%),
+solvingTime = 31129 ms, checkingTime = 195 ms,
+updatingTime = 0 ms, totalTime = 31324 ms
+
+2024-06-01 18:30:44.374 [INFO ][KScriptLogger]
+SPOON-157_1 results:
+cnt = 25, sat = 17,
+unsat = 2, unknown = 6,
+reusedUnsat = 0 (0.00%),
+solvingTime = 31695 ms, checkingTime = 450 ms,
+updatingTime = 0 ms, totalTime = 32145 ms
+
+2024-06-01 18:30:48.681 [INFO ][KScriptLogger]
+FASTJSON-4_1 results:
+cnt = 157, sat = 82,
+unsat = 75, unknown = 0,
+reusedUnsat = 42 (56.00%),
+solvingTime = 1832 ms, checkingTime = 895 ms,
+updatingTime = 0 ms, totalTime = 2727 ms
+
+2024-06-01 18:31:15.468 [INFO ][KScriptLogger]
+SPOON-155_1 results:
+cnt = 77, sat = 14,
+unsat = 62, unknown = 1,
+reusedUnsat = 49 (79.03%),
+solvingTime = 14406 ms, checkingTime = 3662 ms,
+updatingTime = 0 ms, totalTime = 18068 ms
+
+2024-06-01 18:32:27.156 [INFO ][KScriptLogger]
+FASTJSON-31_1 results:
+cnt = 81, sat = 20,
+unsat = 50, unknown = 11,
+reusedUnsat = 28 (56.00%),
+solvingTime = 67997 ms, checkingTime = 878 ms,
+updatingTime = 0 ms, totalTime = 68875 ms
+
+2024-06-01 18:44:14.490 [INFO ][KScriptLogger]
+GUAVA-114_1 results:
+cnt = 461, sat = 35,
+unsat = 309, unknown = 117,
+reusedUnsat = 0 (0.00%),
+solvingTime = 635214 ms, checkingTime = 0 ms,
+updatingTime = 0 ms, totalTime = 635214 ms
+
+2024-06-01 18:44:52.456 [INFO ][KScriptLogger]
+SPOON-103_1 results:
+cnt = 23, sat = 6,
+unsat = 11, unknown = 6,
+reusedUnsat = 4 (36.36%),
+solvingTime = 32324 ms, checkingTime = 900 ms,
+updatingTime = 0 ms, totalTime = 33224 ms
+
+2024-06-01 18:45:38.101 [INFO ][KScriptLogger]
+GUAVA-6_1 results:
+cnt = 138, sat = 86,
+unsat = 47, unknown = 5,
+reusedUnsat = 32 (68.09%),
+solvingTime = 40638 ms, checkingTime = 519 ms,
+updatingTime = 0 ms, totalTime = 41157 ms
+
+2024-06-01 18:45:38.102 [INFO ][KScriptLogger]
+Global results:
+cnt = 6650, sat = 2920,
+unsat = 3350, unknown = 380,
+reusedUnsat = 2098 (62.63%),
+solvingTime = 2631517 ms, checkingTime = 288901 ms,
+updatingTime = 1 ms, totalTime = 2920419 ms
+
