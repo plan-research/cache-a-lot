@@ -87,13 +87,13 @@ class LinearStatsParser(
 
         val newState: State = when (state) {
             State.CANDIDATES_CONSUMED -> {
-                assert(parseResult.isCandidatesConsumed())
+                require(parseResult.isCandidatesConsumed())
                 subscriber.onCandidatesConsumed(parseResult.asCandidatesConsumed())
                 State.CHECK
             }
 
             State.CHECK -> {
-                assert(parseResult.isCheck())
+                require(parseResult.isCheck())
                 parseResult.asCheck().let {
                     subscriber.onCheck(it)
                     if (it.value.value) {
@@ -105,7 +105,7 @@ class LinearStatsParser(
             }
 
             State.SOLVE -> {
-                assert(parseResult.isSolve())
+                require(parseResult.isSolve())
                 parseResult.asSolve().let {
                     subscriber.onSolve(it)
                     when (it.value.value) {
@@ -116,7 +116,7 @@ class LinearStatsParser(
             }
 
             State.UPDATE -> {
-                assert(parseResult.isUpdate())
+                require(parseResult.isUpdate())
                 subscriber.onUpdate(parseResult.asUpdate())
                 defaultState
             }
