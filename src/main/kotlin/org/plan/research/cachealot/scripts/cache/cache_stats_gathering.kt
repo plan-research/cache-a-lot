@@ -3,6 +3,8 @@ package org.plan.research.cachealot.scripts.cache
 import io.ksmt.expr.KAndExpr
 import io.ksmt.solver.KSolverStatus
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
@@ -10,8 +12,11 @@ import org.jetbrains.kotlinx.dataframe.api.append
 import org.jetbrains.kotlinx.dataframe.api.dataFrameOf
 import org.jetbrains.kotlinx.dataframe.io.writeCSV
 import org.plan.research.cachealot.KBoolExprs
+import org.plan.research.cachealot.KFormulaeFlatIndex
 import org.plan.research.cachealot.checker.KUnsatChecker
 import org.plan.research.cachealot.checker.KUnsatCheckerFactory
+import org.plan.research.cachealot.index.KIndex
+import org.plan.research.cachealot.index.flat.KListIndex
 import org.plan.research.cachealot.index.flat.KRandomIndex
 import org.plan.research.cachealot.index.logging.withCandidatesNumberLog
 import org.plan.research.cachealot.scripts.BenchmarkExecutor
@@ -20,9 +25,11 @@ import org.plan.research.cachealot.scripts.ScriptContext
 import org.plan.research.cachealot.scripts.scriptLogger
 import org.plan.research.cachealot.statLogger
 import org.plan.research.cachealot.testers.KFullOptTester
+import org.plan.research.cachealot.testers.KUnsatTester
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.io.path.Path
 import kotlin.io.path.createDirectory
 import kotlin.io.path.div
@@ -32,25 +39,39 @@ import kotlin.time.measureTimedValue
 
 private val scriptContext = ScriptContext()
 
+private val excludeNames = listOf("GUAVA-114")
 private val benchmarkPermits = scriptContext.poolSize
-private val executionMode = ExecutionMode.BENCH_PARALLEL
-private val coroutineScope = Dispatchers.Default
-private val usePortfolio = true
-//private val executionMode = ExecutionMode.NONE_PARALLEL
-//private val coroutineScope = EmptyCoroutineContext
-//private val usePortfolio = false
+
+//private val executionMode = ExecutionMode.BENCH_PARALLEL
+//private val coroutineScope = Dispatchers.Default
+//private val usePortfolio = true
+private val executionMode = ExecutionMode.NONE_PARALLEL
+private val coroutineScope = EmptyCoroutineContext
+private val usePortfolio = false
 
 private fun buildUnsatChecker(name: String): KUnsatChecker {
 //    return KUnsatCheckerFactory.create()
-    return KUnsatCheckerFactory.create(
-        KFullOptTester(scriptContext.ctx),
-//        KFullTester(scriptContext.ctx),
-//        KSimpleTester(),
+    return if (excludeNames.all { it !in name }) {
+        KUnsatCheckerFactory.create(
+            KFullOptTester(scriptContext.ctx),
+//          KFullTester(scriptContext.ctx),
+//          KSimpleTester(),
 
-//        KListIndex<KBoolExprs>()
-        KRandomIndex<KBoolExprs>(10)
-            .withCandidatesNumberLog("$name index")
-    )
+            KListIndex<KBoolExprs>()
+//          KRandomIndex<KBoolExprs>(10)
+                .withCandidatesNumberLog("$name index")
+        )
+    } else {
+        KUnsatCheckerFactory.create(
+            object : KUnsatTester {
+                override suspend fun test(unsatCore: KBoolExprs, exprs: KBoolExprs): Boolean = false
+            },
+            object : KFormulaeFlatIndex() {
+                override suspend fun getCandidates(): Flow<KBoolExprs> = emptyFlow()
+                override suspend fun insert(value: KBoolExprs) {}
+            }.withCandidatesNumberLog("$name index")
+        )
+    }
 }
 
 private data class StatsEntry(
