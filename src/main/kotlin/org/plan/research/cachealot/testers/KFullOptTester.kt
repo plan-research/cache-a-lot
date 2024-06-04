@@ -50,9 +50,12 @@ class KFullOptTester(private val ctx: KContext) : KUnsatTester {
             copy(inner.merge(other.inner), variables.putAll(other.variables), other.ignore)
     }
 
-    override suspend fun test(unsatCore: KBoolExprs, exprs: KBoolExprs): Boolean {
-        val possibleTargets = hashMapOf<KDecl<*>, Set<KDecl<*>>>()
-        val states = unsatCore.map { core ->
+    private suspend fun buildStates(
+        unsatCore: KBoolExprs,
+        exprs: KBoolExprs,
+        possibleTargets: MutableMap<KDecl<*>, Set<KDecl<*>>>
+    ): List<List<PersistentMap<KDecl<*>, KDecl<*>>>>? =
+        unsatCore.map { core ->
             var vars = persistentHashMapOf<KDecl<*>, PersistentSet<KDecl<*>>>()
             val result = exprs.mapNotNull {
                 OptState(
@@ -62,13 +65,17 @@ class KFullOptTester(private val ctx: KContext) : KUnsatTester {
                     core eq it
                     vars = state.variables
                 }?.monad?.state?.inner?.map
-            }.takeIf { it.isNotEmpty() } ?: return false
+            }.takeIf { it.isNotEmpty() } ?: return null
 
             possibleTargets.putAll(vars)
 
             result
         }
 
+    private suspend fun isJoinedStatesNotEmpty(
+        states: List<List<PersistentMap<KDecl<*>, KDecl<*>>>>,
+        possibleTargets: MutableMap<KDecl<*>, Set<KDecl<*>>>
+    ): Boolean {
         val result = states.fold(sequenceOf(persistentHashMapOf<KDecl<*>, KDecl<*>>())) { acc, maps ->
             if (acc.firstOrNull() == null) return false
             val filteredMap = maps.filter { it.all { (origin, target) -> target in possibleTargets[origin]!! } }
@@ -76,5 +83,11 @@ class KFullOptTester(private val ctx: KContext) : KUnsatTester {
         }
 
         return result.firstOrNull() != null
+    }
+
+    override suspend fun test(unsatCore: KBoolExprs, exprs: KBoolExprs): Boolean {
+        val possibleTargets = hashMapOf<KDecl<*>, Set<KDecl<*>>>()
+        val states = buildStates(unsatCore, exprs, possibleTargets) ?: return false
+        return isJoinedStatesNotEmpty(states, possibleTargets)
     }
 }
