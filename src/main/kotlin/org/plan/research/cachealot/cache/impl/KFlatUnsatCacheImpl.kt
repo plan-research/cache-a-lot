@@ -1,15 +1,15 @@
-package org.plan.research.cachealot.checker.impl
+package org.plan.research.cachealot.cache.impl
 
 import kotlinx.coroutines.flow.firstOrNull
 import org.plan.research.cachealot.KBoolExprs
 import org.plan.research.cachealot.KFormulaeFlatIndex
-import org.plan.research.cachealot.checker.KUnsatChecker
+import org.plan.research.cachealot.cache.KUnsatCache
 import org.plan.research.cachealot.testers.KUnsatTester
 
-class KFlatUnsatCheckerImpl(
+class KFlatUnsatCacheImpl(
     private val index: KFormulaeFlatIndex,
     private val tester: KUnsatTester,
-) : KUnsatChecker {
+) : KUnsatCache {
 
     override suspend fun addUnsatCore(unsatCore: KBoolExprs) {
         index.insert(unsatCore)

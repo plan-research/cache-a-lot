@@ -1,8 +1,8 @@
-package org.plan.research.cachealot.checker
+package org.plan.research.cachealot.cache
 
 import org.plan.research.cachealot.KBoolExprs
 
-interface KUnsatChecker {
+interface KUnsatCache {
     suspend fun addUnsatCore(unsatCore: KBoolExprs)
     suspend fun check(exprs: KBoolExprs): Boolean
 }

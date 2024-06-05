@@ -1,17 +1,17 @@
-package org.plan.research.cachealot.checker.impl
+package org.plan.research.cachealot.cache.impl
 
 import kotlinx.coroutines.flow.firstOrNull
 import org.plan.research.cachealot.KBoolExprs
 import org.plan.research.cachealot.KFormulaeIndex
-import org.plan.research.cachealot.checker.KUnsatChecker
+import org.plan.research.cachealot.cache.KUnsatCache
 import org.plan.research.cachealot.index.KKeyComputer
 import org.plan.research.cachealot.testers.KUnsatTester
 
-class KUnsatCheckerImpl<K>(
+class KUnsatCacheImpl<K>(
     private val keyComputer: KKeyComputer<K>,
     private val index: KFormulaeIndex<K>,
     private val tester: KUnsatTester,
-) : KUnsatChecker {
+) : KUnsatCache {
 
     override suspend fun addUnsatCore(unsatCore: KBoolExprs) {
         val key = keyComputer(unsatCore)

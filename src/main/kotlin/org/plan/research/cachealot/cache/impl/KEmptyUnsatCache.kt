@@ -1,9 +1,9 @@
-package org.plan.research.cachealot.checker.impl
+package org.plan.research.cachealot.cache.impl
 
 import org.plan.research.cachealot.KBoolExprs
-import org.plan.research.cachealot.checker.KUnsatChecker
+import org.plan.research.cachealot.cache.KUnsatCache
 
-object KEmptyUnsatChecker : KUnsatChecker {
+object KEmptyUnsatCache : KUnsatCache {
     override suspend fun addUnsatCore(unsatCore: KBoolExprs) {}
     override suspend fun check(exprs: KBoolExprs): Boolean = false
 }

@@ -2,7 +2,6 @@ package org.plan.research.cachealot.scripts.cache
 
 import io.ksmt.expr.KAndExpr
 import io.ksmt.solver.KSolverStatus
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.sync.Mutex
@@ -13,11 +12,9 @@ import org.jetbrains.kotlinx.dataframe.api.dataFrameOf
 import org.jetbrains.kotlinx.dataframe.io.writeCSV
 import org.plan.research.cachealot.KBoolExprs
 import org.plan.research.cachealot.KFormulaeFlatIndex
-import org.plan.research.cachealot.checker.KUnsatChecker
-import org.plan.research.cachealot.checker.KUnsatCheckerFactory
-import org.plan.research.cachealot.index.KIndex
+import org.plan.research.cachealot.cache.KUnsatCache
+import org.plan.research.cachealot.cache.KUnsatCacheFactory
 import org.plan.research.cachealot.index.flat.KListIndex
-import org.plan.research.cachealot.index.flat.KRandomIndex
 import org.plan.research.cachealot.index.logging.withCandidatesNumberLog
 import org.plan.research.cachealot.scripts.BenchmarkExecutor
 import org.plan.research.cachealot.scripts.ExecutionMode
@@ -49,10 +46,10 @@ private val executionMode = ExecutionMode.NONE_PARALLEL
 private val coroutineScope = EmptyCoroutineContext
 private val usePortfolio = false
 
-private fun buildUnsatChecker(name: String): KUnsatChecker {
+private fun buildUnsatCache(name: String): KUnsatCache {
 //    return KUnsatCheckerFactory.create()
     return if (excludeNames.all { it !in name }) {
-        KUnsatCheckerFactory.create(
+        KUnsatCacheFactory.create(
             KFullOptTester(scriptContext.ctx),
 //          KFullTester(scriptContext.ctx),
 //          KSimpleTester(),
@@ -62,7 +59,7 @@ private fun buildUnsatChecker(name: String): KUnsatChecker {
                 .withCandidatesNumberLog("$name index")
         )
     } else {
-        KUnsatCheckerFactory.create(
+        KUnsatCacheFactory.create(
             object : KUnsatTester {
                 override suspend fun test(unsatCore: KBoolExprs, exprs: KBoolExprs): Boolean = false
             },
@@ -129,7 +126,7 @@ private class StatsCollector(private val name: String) {
             updatingTime.get(),
         )
 
-    suspend fun update(unsatChecker: KUnsatChecker, path: Path) = with(scriptContext) {
+    suspend fun update(unsatCache: KUnsatCache, path: Path) = with(scriptContext) {
         val fullName = "$name ${path.nameWithoutExtension}"
         try {
             val assertions = parser.parse(path).flatMap {
@@ -142,7 +139,7 @@ private class StatsCollector(private val name: String) {
             cnt.incrementAndGet()
 
             val (checkResult, checkingDuration) = measureTimedValue {
-                unsatChecker.check(assertions)
+                unsatCache.check(assertions)
             }
             statLogger.info {
                 "$fullName check: $checkResult, ${checkingDuration.inWholeMilliseconds}"
@@ -176,7 +173,7 @@ private class StatsCollector(private val name: String) {
                             unsat.incrementAndGet()
                             val updatingDuration = measureTime {
                                 val unsatCore = solver.unsatCore()
-                                unsatChecker.addUnsatCore(unsatCore)
+                                unsatCache.addUnsatCore(unsatCore)
                             }
                             statLogger.info {
                                 "$fullName update: ${updatingDuration.inWholeMilliseconds}"
@@ -209,7 +206,7 @@ private class StatsCollector(private val name: String) {
                             unsat.incrementAndGet()
                             val updatingDuration = measureTime {
                                 val unsatCore = solver.unsatCoreAsync()
-                                unsatChecker.addUnsatCore(unsatCore)
+                                unsatCache.addUnsatCore(unsatCore)
                             }
                             statLogger.info {
                                 "$fullName update: ${updatingDuration.inWholeMilliseconds}"
@@ -252,15 +249,16 @@ fun main(args: Array<String>) {
     BenchmarkExecutor {
         object {
             val localStats = StatsCollector(it)
-            val unsatChecker = buildUnsatChecker(it)
+            val unsatCache = buildUnsatCache(it)
         }
     }.onNewBenchmark {
+//        if (it != "SPOON-151_1") return@onNewBenchmark false
         benchSemaphore.acquire()
         scriptLogger.debug { "New Benchmark: $it" }
         true
     }.onNewSmtFile {
         scriptLogger.debug { "New Smt File: $it" }
-        localStats.update(unsatChecker, it)
+        localStats.update(unsatCache, it)
     }.onBenchmarkEnd { benchName ->
         scriptLogger.debug { "Benchmark ended: $benchName" }
         val result = localStats.result

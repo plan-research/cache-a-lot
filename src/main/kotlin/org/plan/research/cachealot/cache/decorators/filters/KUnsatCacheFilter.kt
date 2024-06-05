@@ -1,10 +1,10 @@
-package org.plan.research.cachealot.checker.decorators.filters
+package org.plan.research.cachealot.cache.decorators.filters
 
 import org.plan.research.cachealot.KBoolExprs
-import org.plan.research.cachealot.checker.KUnsatChecker
-import org.plan.research.cachealot.checker.decorators.KUnsatCheckerDecorator
+import org.plan.research.cachealot.cache.KUnsatCache
+import org.plan.research.cachealot.cache.decorators.KUnsatCacheDecorator
 
-abstract class KUnsatCheckerFilter(override val inner: KUnsatChecker) : KUnsatCheckerDecorator() {
+abstract class KUnsatCacheFilter(override val inner: KUnsatCache) : KUnsatCacheDecorator() {
 
     protected abstract suspend fun unsatCoreFilter(unsatCore: KBoolExprs): Boolean
     protected abstract suspend fun formulaeFilter(exprs: KBoolExprs): Boolean
