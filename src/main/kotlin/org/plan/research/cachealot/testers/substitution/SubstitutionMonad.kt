@@ -4,24 +4,12 @@ import io.ksmt.decl.KDecl
 import io.ksmt.expr.*
 import org.plan.research.cachealot.structEquals
 
-data class SubstitutionMonadHolder<T : SubstitutionMonadState<T>>(val monad: SubstitutionMonad<T>) {
-    constructor(state: T) : this(SubstitutionMonad(state))
+abstract class SubstitutionMonad<T : SubstitutionMonadState<T>> {
+    abstract var state: T
 
-    inline fun run(block: SubstitutionMonad<T>.() -> Unit): SubstitutionMonadHolder<T>? {
-        try {
-            val newMonad = monad.copy()
-            newMonad.block()
-            return SubstitutionMonadHolder(newMonad)
-        } catch (e: SubstitutionException) {
-            return null
-        }
-    }
-}
+    abstract fun copy(): SubstitutionMonad<T>
 
-// Why? Because I feel that way.
-data class SubstitutionMonad<T : SubstitutionMonadState<T>>(var state: T) {
-
-    inline fun scoped(decls: List<KDecl<*>> = emptyList(), block: () -> Unit) {
+    inline fun scoped(decls: List<KDecl<*>>, block: () -> Unit) {
         val extracted = state.extract(decls)
         try {
             state = state.removeAll(decls)
@@ -31,66 +19,25 @@ data class SubstitutionMonad<T : SubstitutionMonadState<T>>(var state: T) {
         }
     }
 
-    infix fun KDecl<*>.eq(decl: KDecl<*>) {
-        substitutionAssert { sort == decl.sort }
-        if (!state.checkSubstitution(this@eq, decl)) {
-            substitutionAssert { !state.hasSubstitutionFor(this) }
-            state = state.substitute(this, decl)
-        }
-    }
+    abstract fun eq(lhs: KDecl<*>, rhs: KDecl<*>)
+    infix fun KDecl<*>.eq(other: KDecl<*>) = eq(this, other)
 
-    infix fun List<KDecl<*>>.eqDecls(decls: List<KDecl<*>>) {
-        substitutionAssert { size == decls.size }
+    infix fun List<KDecl<*>>.eqDecls(other: List<KDecl<*>>) {
+        substitutionAssert { size == other.size }
         for (i in indices) {
-            get(i) eq decls[i]
+            this[i] eq other[i]
         }
     }
 
-    infix fun List<KExpr<*>>.eqExprs(exprs: List<KExpr<*>>) {
-        substitutionAssert { size == exprs.size }
+    abstract fun eq(lhs: KExpr<*>, rhs: KExpr<*>)
+    infix fun KExpr<*>.eq(other: KExpr<*>) = eq(this, other)
+
+    infix fun List<KExpr<*>>.eqExprs(other: List<KExpr<*>>) {
+        substitutionAssert { size == other.size }
         for (i in indices) {
-            get(i) eq exprs[i]
+            this[i] eq other[i]
         }
     }
 
-    infix fun KExpr<*>.eq(expr: KExpr<*>) {
-        substitutionAssert { this::class == expr::class }
-        substitutionAssert { sort == expr.sort }
-        when (this) {
-            is KFunctionApp<*> -> {
-                expr as KFunctionApp<*>
-                if (args.isEmpty() && expr.args.isEmpty()) {
-                    // variable
-                    decl eq expr.decl
-                } else {
-                    substitutionAssert { decl structEquals expr.decl }
-                }
-                args eqExprs expr.args
-            }
-
-            is KApp<*, *> -> {
-                expr as KApp<*, *>
-                substitutionAssert { decl structEquals expr.decl }
-                args eqExprs expr.args
-            }
-
-            is KQuantifier -> {
-                expr as KQuantifier
-                scoped(bounds) {
-                    bounds eqDecls expr.bounds
-                    body eq expr.body
-                }
-            }
-
-            is KArrayLambdaBase<*, *> -> {
-                expr as KArrayLambdaBase<*, *>
-                scoped(indexVarDeclarations) {
-                    indexVarDeclarations eqDecls expr.indexVarDeclarations
-                    body eq expr.body
-                }
-            }
-
-            else -> substitutionFail()
-        }
-    }
 }
+

@@ -8,6 +8,7 @@ import kotlinx.collections.immutable.persistentHashMapOf
 import kotlinx.collections.immutable.persistentHashSetOf
 import org.plan.research.cachealot.KBoolExprs
 import org.plan.research.cachealot.testers.substitution.*
+import org.plan.research.cachealot.testers.substitution.impl.MapSubstitutionMonadState
 import org.plan.research.cachealot.toCachedSequence
 
 class KFullOptTester(private val ctx: KContext) : KUnsatTester {

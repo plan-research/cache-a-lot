@@ -1,9 +1,12 @@
-package org.plan.research.cachealot.testers.substitution
+package org.plan.research.cachealot.testers.substitution.impl
 
 import io.ksmt.decl.KDecl
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentHashMapOf
 import org.plan.research.cachealot.structEquals
+import org.plan.research.cachealot.testers.substitution.SubstitutionMonadState
+import org.plan.research.cachealot.testers.substitution.extractAll
+import org.plan.research.cachealot.testers.substitution.removeAll
 
 data class MapSubstitutionMonadState(
     val map: PersistentMap<KDecl<*>, KDecl<*>> = persistentHashMapOf()

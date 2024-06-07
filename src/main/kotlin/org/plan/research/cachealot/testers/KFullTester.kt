@@ -2,8 +2,8 @@ package org.plan.research.cachealot.testers
 
 import io.ksmt.KContext
 import org.plan.research.cachealot.KBoolExprs
-import org.plan.research.cachealot.testers.substitution.MapSubstitutionMonadState
 import org.plan.research.cachealot.testers.substitution.SubstitutionMonadHolder
+import org.plan.research.cachealot.testers.substitution.impl.MapSubstitutionMonadState
 import org.plan.research.cachealot.testers.substitution.wrap
 
 class KFullTester(private val ctx: KContext) : KUnsatTester {
