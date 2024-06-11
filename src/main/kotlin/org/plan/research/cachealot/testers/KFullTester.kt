@@ -8,7 +8,7 @@ import org.plan.research.cachealot.testers.substitution.wrap
 
 class KFullTester(private val ctx: KContext) : KUnsatTester {
 
-    private fun createMonad() = MapSubstitutionMonadState().wrap()
+    private fun createMonad() = MapSubstitutionMonadState().wrap().wrap()
 
     private data class StackEntry(val index: Int, val monad: SubstitutionMonadHolder<MapSubstitutionMonadState>)
 

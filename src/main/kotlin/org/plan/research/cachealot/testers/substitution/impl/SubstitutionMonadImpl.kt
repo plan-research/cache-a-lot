@@ -14,7 +14,7 @@ open class SubstitutionMonadImpl<T : SubstitutionMonadState<T>>(override var sta
     override fun copy(): SubstitutionMonad<T> =
         SubstitutionMonadImpl(state)
 
-    override fun eq(lhs: KDecl<*>, rhs: KDecl<*>) {
+    override fun eqDecl(lhs: KDecl<*>, rhs: KDecl<*>) {
         substitutionAssert { lhs.sort == rhs.sort }
         if (!state.checkSubstitution(lhs, rhs)) {
             substitutionAssert { !state.hasSubstitutionFor(lhs) }
@@ -22,7 +22,7 @@ open class SubstitutionMonadImpl<T : SubstitutionMonadState<T>>(override var sta
         }
     }
 
-    override fun eq(lhs: KExpr<*>, rhs: KExpr<*>) {
+    override fun eqExpr(lhs: KExpr<*>, rhs: KExpr<*>) {
         substitutionAssert { lhs::class == rhs::class }
         substitutionAssert { lhs.sort == rhs.sort }
         when (lhs) {

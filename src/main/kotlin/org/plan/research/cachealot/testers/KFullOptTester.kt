@@ -2,16 +2,24 @@ package org.plan.research.cachealot.testers
 
 import io.ksmt.KContext
 import io.ksmt.decl.KDecl
+import io.ksmt.expr.KExpr
+import io.ksmt.sort.KBoolSort
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.PersistentSet
 import kotlinx.collections.immutable.persistentHashMapOf
 import kotlinx.collections.immutable.persistentHashSetOf
 import org.plan.research.cachealot.KBoolExprs
+import org.plan.research.cachealot.metrics.hash.KExprHasher
+import org.plan.research.cachealot.metrics.hash.KExprHasherImpl
 import org.plan.research.cachealot.testers.substitution.*
 import org.plan.research.cachealot.testers.substitution.impl.MapSubstitutionMonadState
 import org.plan.research.cachealot.toCachedSequence
 
 class KFullOptTester(private val ctx: KContext) : KUnsatTester {
+
+    private var hasher: KExprHasher = KExprHasherImpl(7)
+    var exprsHasher: KExprHasher = KExprHasherImpl(7)
+        private set
 
     private data class OptState(
         val inner: MapSubstitutionMonadState = MapSubstitutionMonadState(),
@@ -55,23 +63,28 @@ class KFullOptTester(private val ctx: KContext) : KUnsatTester {
         unsatCore: KBoolExprs,
         exprs: KBoolExprs,
         possibleTargets: MutableMap<KDecl<*>, Set<KDecl<*>>>
-    ): List<List<PersistentMap<KDecl<*>, KDecl<*>>>>? =
-        unsatCore.map { core ->
+    ): List<List<PersistentMap<KDecl<*>, KDecl<*>>>>? {
+        val hash2Exprs = HashMap<Long, MutableList<KExpr<KBoolSort>>>()
+        exprs.forEach { hash2Exprs.getOrPut(exprsHasher.computeHash(it)) { mutableListOf() }.add(it) }
+
+        return unsatCore.map { core ->
+            val coreHash = hasher.computeHash(core)
             var vars = persistentHashMapOf<KDecl<*>, PersistentSet<KDecl<*>>>()
-            val result = exprs.mapNotNull {
+            val result = hash2Exprs[coreHash]?.mapNotNull {
                 OptState(
                     variables = vars,
                     possibleTargets = possibleTargets,
-                ).wrap().run {
+                ).wrap().withHash(hasher, exprsHasher).wrap().run {
                     core eq it
                     vars = state.variables
                 }?.monad?.state?.inner?.map
-            }.takeIf { it.isNotEmpty() } ?: return null
+            }?.takeIf { it.isNotEmpty() } ?: return null
 
             possibleTargets.putAll(vars)
 
             result
         }
+    }
 
     private suspend fun isJoinedStatesNotEmpty(
         states: List<List<PersistentMap<KDecl<*>, KDecl<*>>>>,

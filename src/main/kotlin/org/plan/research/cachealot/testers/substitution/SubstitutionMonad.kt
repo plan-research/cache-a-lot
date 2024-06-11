@@ -19,8 +19,8 @@ abstract class SubstitutionMonad<T : SubstitutionMonadState<T>> {
         }
     }
 
-    abstract fun eq(lhs: KDecl<*>, rhs: KDecl<*>)
-    infix fun KDecl<*>.eq(other: KDecl<*>) = eq(this, other)
+    abstract fun eqDecl(lhs: KDecl<*>, rhs: KDecl<*>)
+    infix fun KDecl<*>.eq(other: KDecl<*>) = eqDecl(this, other)
 
     infix fun List<KDecl<*>>.eqDecls(other: List<KDecl<*>>) {
         substitutionAssert { size == other.size }
@@ -29,8 +29,8 @@ abstract class SubstitutionMonad<T : SubstitutionMonadState<T>> {
         }
     }
 
-    abstract fun eq(lhs: KExpr<*>, rhs: KExpr<*>)
-    infix fun KExpr<*>.eq(other: KExpr<*>) = eq(this, other)
+    abstract fun eqExpr(lhs: KExpr<*>, rhs: KExpr<*>)
+    infix fun KExpr<*>.eq(other: KExpr<*>) = eqExpr(this, other)
 
     infix fun List<KExpr<*>>.eqExprs(other: List<KExpr<*>>) {
         substitutionAssert { size == other.size }

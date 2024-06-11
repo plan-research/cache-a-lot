@@ -4,7 +4,7 @@ import io.ksmt.decl.KDecl
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.mutate
 import kotlinx.collections.immutable.persistentHashMapOf
-import org.plan.research.cachealot.hash.KExprHasher
+import org.plan.research.cachealot.metrics.hash.KExprHasher
 import org.plan.research.cachealot.structEquals
 import org.plan.research.cachealot.testers.substitution.impl.SubstitutionMonadHashTransformer
 import org.plan.research.cachealot.testers.substitution.impl.SubstitutionMonadImpl
@@ -33,6 +33,6 @@ fun <K, V> PersistentMap<K, V>.extractAll(keys: Collection<K>): PersistentMap<K,
 }
 
 fun <T : SubstitutionMonadState<T>> SubstitutionMonad<T>.wrap() = SubstitutionMonadHolder(this)
-fun <T : SubstitutionMonadState<T>> T.wrap() = SubstitutionMonadHolder(SubstitutionMonadImpl(this))
+fun <T : SubstitutionMonadState<T>> T.wrap() = SubstitutionMonadImpl(this)
 fun <T : SubstitutionMonadState<T>> SubstitutionMonad<T>.withHash(lhsHasher: KExprHasher, rhsHasher: KExprHasher) =
     SubstitutionMonadHashTransformer(this, lhsHasher, rhsHasher)
