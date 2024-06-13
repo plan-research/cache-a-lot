@@ -2,7 +2,7 @@ package org.plan.research.cachealot.testers.substitution.impl
 
 import io.ksmt.decl.KDecl
 import io.ksmt.expr.KExpr
-import org.plan.research.cachealot.metrics.hash.KExprHasher
+import org.plan.research.cachealot.hash.KExprHasher
 import org.plan.research.cachealot.testers.substitution.SubstitutionMonad
 import org.plan.research.cachealot.testers.substitution.SubstitutionMonadState
 import org.plan.research.cachealot.testers.substitution.substitutionAssert

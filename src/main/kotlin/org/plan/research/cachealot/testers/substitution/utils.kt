@@ -4,7 +4,7 @@ import io.ksmt.decl.KDecl
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.mutate
 import kotlinx.collections.immutable.persistentHashMapOf
-import org.plan.research.cachealot.metrics.hash.KExprHasher
+import org.plan.research.cachealot.hash.KExprHasher
 import org.plan.research.cachealot.structEquals
 import org.plan.research.cachealot.testers.substitution.impl.SubstitutionMonadHashTransformer
 import org.plan.research.cachealot.testers.substitution.impl.SubstitutionMonadImpl

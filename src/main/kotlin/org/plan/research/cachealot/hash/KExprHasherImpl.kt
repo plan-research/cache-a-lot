@@ -1,4 +1,4 @@
-package org.plan.research.cachealot.metrics.hash
+package org.plan.research.cachealot.hash
 
 import io.ksmt.expr.*
 import java.util.IdentityHashMap

@@ -15,6 +15,7 @@ import org.plan.research.cachealot.KFormulaeFlatIndex
 import org.plan.research.cachealot.cache.KUnsatCache
 import org.plan.research.cachealot.cache.KUnsatCacheFactory
 import org.plan.research.cachealot.cache.decorators.onCheckEnd
+import org.plan.research.cachealot.hash.KCacheContext
 import org.plan.research.cachealot.index.flat.KListIndex
 import org.plan.research.cachealot.index.logging.withCandidatesNumberLog
 import org.plan.research.cachealot.scripts.BenchmarkExecutor
@@ -49,8 +50,9 @@ private val usePortfolio = false
 
 private fun buildUnsatCache(name: String): KUnsatCache {
 //    return KUnsatCheckerFactory.create()
+    val cacheContext = KCacheContext()
     return if (excludeNames.all { it !in name }) {
-        val tester = KFullOptTester(scriptContext.ctx)
+        val tester = KFullOptTester(scriptContext.ctx, cacheContext)
 //        val tester = KFullTester(scriptContext.ctx),
 //        val tester = KSimpleTester(),
 
@@ -58,7 +60,7 @@ private fun buildUnsatCache(name: String): KUnsatCache {
 //        val index = KRandomIndex<KBoolExprs>(10)
 
         KUnsatCacheFactory.create(tester, index.withCandidatesNumberLog("$name index"))
-            .onCheckEnd { tester.exprsHasher.clear() }
+            .onCheckEnd { cacheContext.clearExprsRelated() }
     } else {
         KUnsatCacheFactory.create(
             object : KUnsatTester {
