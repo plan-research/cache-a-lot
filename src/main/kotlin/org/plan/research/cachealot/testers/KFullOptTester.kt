@@ -67,9 +67,9 @@ class KFullOptTester(
         unsatCore.map { core ->
             val coreHash = coreHasher.computeHash(core)
             hash2Exprs[coreHash]?.let { core to it } ?: return null
-        }.sortedBy { it.second.size }.map { (core, exprs) ->
+        }.map { (core, filteredExprs) ->
             var vars = persistentHashMapOf<KDecl<*>, PersistentSet<KDecl<*>>>()
-            val result = exprs.mapNotNull {
+            val result = filteredExprs.mapNotNull {
                 OptState(
                     variables = vars,
                     possibleTargets = possibleTargets,

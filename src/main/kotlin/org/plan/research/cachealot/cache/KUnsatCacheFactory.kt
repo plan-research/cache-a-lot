@@ -22,4 +22,11 @@ object KUnsatCacheFactory {
         index: KFormulaeIndex<K>,
         keyComputer: KKeyComputer<K>,
     ): KUnsatCache = KUnsatCacheImpl(keyComputer, index, tester)
+
+    fun <K> create(
+        tester: KUnsatTester,
+        index: KFormulaeIndex<K>,
+        coreKeyComputer: KKeyComputer<K>,
+        exprKeyComputer: KKeyComputer<K>,
+    ): KUnsatCache = KUnsatCacheImpl(coreKeyComputer, exprKeyComputer, index, tester)
 }

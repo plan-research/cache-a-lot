@@ -16,6 +16,10 @@ import org.plan.research.cachealot.cache.KUnsatCache
 import org.plan.research.cachealot.cache.KUnsatCacheFactory
 import org.plan.research.cachealot.cache.decorators.onCheckEnd
 import org.plan.research.cachealot.hash.KCacheContext
+import org.plan.research.cachealot.index.bloom.KBloomFilterComputer
+import org.plan.research.cachealot.index.bloom.KBloomFilterIndex
+import org.plan.research.cachealot.index.bloom.KBloomFilterKey
+import org.plan.research.cachealot.index.bloom.KBloomFilterKeyOrigin
 import org.plan.research.cachealot.index.flat.KListIndex
 import org.plan.research.cachealot.index.logging.withCandidatesNumberLog
 import org.plan.research.cachealot.scripts.BenchmarkExecutor
@@ -50,17 +54,22 @@ private val usePortfolio = false
 
 private fun buildUnsatCache(name: String): KUnsatCache {
 //    return KUnsatCheckerFactory.create()
-    val cacheContext = KCacheContext()
     return if (excludeNames.all { it !in name }) {
+        val cacheContext = KCacheContext()
         val tester = KFullOptTester(scriptContext.ctx, cacheContext)
 //        val tester = KFullTester(scriptContext.ctx),
 //        val tester = KSimpleTester(),
 
-        val index = KListIndex<KBoolExprs>()
+//        val index = KListIndex<KBoolExprs>()
 //        val index = KRandomIndex<KBoolExprs>(10)
+        val index = KBloomFilterIndex<KBoolExprs>()
+        val nbits = 4 shl 6
 
-        KUnsatCacheFactory.create(tester, index.withCandidatesNumberLog("$name index"))
-            .onCheckEnd { cacheContext.clearExprsRelated() }
+        KUnsatCacheFactory.create(
+            tester, index.withCandidatesNumberLog("$name index"),
+            KBloomFilterComputer(nbits, cacheContext.coreHasher),
+            KBloomFilterComputer(nbits, cacheContext.exprHasher, computeInverted = true),
+        ).onCheckEnd { cacheContext.clearExprsRelated() }
     } else {
         KUnsatCacheFactory.create(
             object : KUnsatTester {
