@@ -2,12 +2,12 @@ package org.plan.research.cachealot.cache.impl
 
 import kotlinx.coroutines.flow.firstOrNull
 import org.plan.research.cachealot.KBoolExprs
-import org.plan.research.cachealot.KFormulaeFlatIndex
 import org.plan.research.cachealot.cache.KUnsatCache
+import org.plan.research.cachealot.index.flat.KFlatIndex
 import org.plan.research.cachealot.testers.KUnsatTester
 
 class KFlatUnsatCacheImpl(
-    private val index: KFormulaeFlatIndex,
+    private val index: KFlatIndex,
     private val tester: KUnsatTester,
 ) : KUnsatCache {
 

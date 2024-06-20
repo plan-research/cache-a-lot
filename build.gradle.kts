@@ -1,6 +1,6 @@
 plugins {
     kotlin("jvm") version libs.versions.kotlin
-    application
+    alias(libs.plugins.shadow)
 }
 
 val outputDir: String by project
@@ -22,6 +22,7 @@ dependencies {
     implementation(libs.ksmt.runner)
 
     implementation(libs.kotlinx.dataframe)
+    implementation(libs.ini4j)
 
     implementation(libs.kotlin.logging.jvm)
     implementation(libs.logback.classic)
@@ -29,19 +30,9 @@ dependencies {
     testImplementation(kotlin("test"))
 }
 
-application {
-    applicationDefaultJvmArgs = listOf("-Xmx24G", "-Xms24G", "-DlogDir=$outputDir")
-    mainClass = "org.plan.research.cachealot.scripts.cache.Cache_stats_gatheringKt"
-    executableDir = project.rootDir.absolutePath
-}
-
 tasks {
     test {
         useJUnitPlatform()
-    }
-
-    getByName<JavaExec>("run") {
-        args(benchmarkDir, outputDir)
     }
 }
 

@@ -11,16 +11,14 @@ import org.jetbrains.kotlinx.dataframe.api.append
 import org.jetbrains.kotlinx.dataframe.api.dataFrameOf
 import org.jetbrains.kotlinx.dataframe.io.writeCSV
 import org.plan.research.cachealot.KBoolExprs
-import org.plan.research.cachealot.KFormulaeFlatIndex
 import org.plan.research.cachealot.cache.KUnsatCache
 import org.plan.research.cachealot.cache.KUnsatCacheFactory
 import org.plan.research.cachealot.cache.decorators.onCheckEnd
 import org.plan.research.cachealot.hash.KCacheContext
-import org.plan.research.cachealot.index.bloom.KBloomFilterComputer
 import org.plan.research.cachealot.index.bloom.KBloomFilterIndex
-import org.plan.research.cachealot.index.bloom.KBloomFilterKey
-import org.plan.research.cachealot.index.bloom.KBloomFilterKeyOrigin
+import org.plan.research.cachealot.index.flat.KFlatIndex
 import org.plan.research.cachealot.index.flat.KListIndex
+import org.plan.research.cachealot.index.flat.KRandomIndex
 import org.plan.research.cachealot.index.logging.withCandidatesNumberLog
 import org.plan.research.cachealot.scripts.BenchmarkExecutor
 import org.plan.research.cachealot.scripts.ExecutionMode
@@ -28,6 +26,8 @@ import org.plan.research.cachealot.scripts.ScriptContext
 import org.plan.research.cachealot.scripts.scriptLogger
 import org.plan.research.cachealot.statLogger
 import org.plan.research.cachealot.testers.KFullOptTester
+import org.plan.research.cachealot.testers.KFullTester
+import org.plan.research.cachealot.testers.KSimpleTester
 import org.plan.research.cachealot.testers.KUnsatTester
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
@@ -42,7 +42,6 @@ import kotlin.time.measureTimedValue
 
 private val scriptContext = ScriptContext()
 
-private val excludeNames = listOf("GUAVA-114")
 private val benchmarkPermits = scriptContext.poolSize
 
 //private val executionMode = ExecutionMode.BENCH_PARALLEL
@@ -52,30 +51,46 @@ private val executionMode = ExecutionMode.NONE_PARALLEL
 private val coroutineScope = EmptyCoroutineContext
 private val usePortfolio = false
 
-private fun buildUnsatCache(name: String): KUnsatCache {
-//    return KUnsatCheckerFactory.create()
-    return if (excludeNames.all { it !in name }) {
+private class ScriptProperties(path: Path) : CacheScriptPropertiesBase(path) {
+    val empty = getProperty<Boolean>("cache", "empty") ?: false
+    val tester = getStringProperty("cache", "tester")
+    val index = getStringProperty("cache", "index")
+    val nbits = getProperty<Int>("cache", "nbits")
+    val exclude = getListStringProperty("cache", "exclude")
+}
+
+private fun buildUnsatCache(properties: ScriptProperties, name: String): KUnsatCache {
+    if (properties.empty) {
+        return KUnsatCacheFactory.create()
+    }
+
+    return if (properties.exclude.all { it !in name }) {
         val cacheContext = KCacheContext()
-        val tester = KFullOptTester(scriptContext.ctx, cacheContext)
-//        val tester = KFullTester(scriptContext.ctx),
-//        val tester = KSimpleTester(),
+        val tester = when (properties.tester) {
+            "simple" -> KSimpleTester()
+            "full" -> KFullTester(scriptContext.ctx)
+            "fullopt" -> KFullOptTester(scriptContext.ctx, cacheContext)
+            else -> throw IllegalArgumentException("Unsupported tester class: ${properties.tester}")
+        }
 
-//        val index = KListIndex<KBoolExprs>()
-//        val index = KRandomIndex<KBoolExprs>(10)
-        val index = KBloomFilterIndex<KBoolExprs>()
-        val nbits = 4 shl 6
+        val index = when (properties.index) {
+            "random" -> KRandomIndex(10)
+            "list" -> KListIndex()
+            "bloom" -> KBloomFilterIndex(properties.nbits!!, cacheContext.exprHasher, cacheContext.exprHasher)
+            else -> throw IllegalArgumentException("Unsupported index: ${properties.index}")
+        }
 
-        KUnsatCacheFactory.create(
-            tester, index.withCandidatesNumberLog("$name index"),
-            KBloomFilterComputer(nbits, cacheContext.coreHasher),
-            KBloomFilterComputer(nbits, cacheContext.exprHasher, computeInverted = true),
-        ).onCheckEnd { cacheContext.clearExprsRelated() }
+        if (index is KFlatIndex) {
+            KUnsatCacheFactory.create(tester, index.withCandidatesNumberLog("$name index"))
+        } else {
+            KUnsatCacheFactory.create(tester, index.withCandidatesNumberLog("$name index"))
+        }.onCheckEnd { cacheContext.clearExprsRelated() }
     } else {
         KUnsatCacheFactory.create(
             object : KUnsatTester {
                 override suspend fun test(unsatCore: KBoolExprs, exprs: KBoolExprs): Boolean = false
             },
-            object : KFormulaeFlatIndex() {
+            object : KFlatIndex() {
                 override suspend fun getCandidates(): Flow<KBoolExprs> = emptyFlow()
                 override suspend fun insert(value: KBoolExprs) {}
             }.withCandidatesNumberLog("$name index")
@@ -238,8 +253,9 @@ private class StatsCollector(private val name: String) {
 }
 
 fun main(args: Array<String>) {
-    val path = Path(args[0])
-    val outputPath = Path(args[1]).also {
+    val properties = ScriptProperties(Path(args[0]))
+    val path = Path(args[1])
+    val outputPath = Path(args[2]).also {
         it.createDirectory()
     }
 
@@ -261,10 +277,9 @@ fun main(args: Array<String>) {
     BenchmarkExecutor {
         object {
             val localStats = StatsCollector(it)
-            val unsatCache = buildUnsatCache(it)
+            val unsatCache = buildUnsatCache(properties, it)
         }
     }.onNewBenchmark {
-//        if (it != "SPOON-151_1") return@onNewBenchmark false
         benchSemaphore.acquire()
         scriptLogger.debug { "New Benchmark: $it" }
         true

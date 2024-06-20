@@ -5,14 +5,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.plan.research.cachealot.KBoolExprs
 import kotlin.math.min
 import kotlin.random.Random.Default.nextInt
 
-class KRandomIndex<V>(private val numberOfCandidates: Int) : KFlatIndex<V>() {
+class KRandomIndex(private val numberOfCandidates: Int) : KFlatIndex() {
     private val mutex = Mutex()
-    private var candidates = persistentListOf<V>()
+    private var candidates = persistentListOf<KBoolExprs>()
 
-    override suspend fun getCandidates(): Flow<V> = flow {
+    override suspend fun getCandidates(): Flow<KBoolExprs> = flow {
         val current = mutex.withLock { candidates }
         val num = min(numberOfCandidates, current.size)
 
@@ -29,7 +30,7 @@ class KRandomIndex<V>(private val numberOfCandidates: Int) : KFlatIndex<V>() {
         }
     }
 
-    override suspend fun insert(value: V) {
+    override suspend fun insert(value: KBoolExprs) {
         mutex.withLock { candidates = candidates.add(value) }
     }
 }

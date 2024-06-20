@@ -7,6 +7,8 @@ collections = "0.3.7"
 dataframe = "0.13.1"
 klogging = "3.0.5"
 logback = "1.5.6"
+ini4j = "0.5.4"
+shadow = "8.1.1"
 
 [libraries]
 
@@ -18,5 +20,8 @@ ksmt-runner = { module = "io.ksmt:ksmt-runner", version.ref = "ksmt" }
 kotlinx-dataframe = { module = "org.jetbrains.kotlinx:dataframe", version.ref = "dataframe" }
 kotlin-logging-jvm = { module = "io.github.microutils:kotlin-logging-jvm", version.ref = "klogging" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+ini4j = { module = "org.ini4j:ini4j", version.ref = "ini4j" }
 
 [plugins]
+
+shadow = { id = "com.github.johnrengelman.shadow", version.ref = "shadow" }

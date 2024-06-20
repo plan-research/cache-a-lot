@@ -6,7 +6,9 @@ import kotlinx.coroutines.runBlocking
 import java.nio.file.Path
 import kotlin.coroutines.CoroutineContext
 import kotlin.io.path.forEachDirectoryEntry
+import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.name
+import kotlin.io.path.nameWithoutExtension
 
 enum class ExecutionMode {
     NONE_PARALLEL, SMT_PARALLEL, BENCH_PARALLEL, ALL_PARALLEL
@@ -47,13 +49,21 @@ class BenchmarkExecutor<Context>(private val contextBuilder: (String) -> Context
         }
     }
 
+    private inline fun Path.forEachBench(block: (Path) -> Unit) {
+        listDirectoryEntries().sorted().forEach(block)
+    }
+
+    private inline fun Path.forEachSmtFile(block: (Path) -> Unit) {
+        listDirectoryEntries().sortedBy { it.nameWithoutExtension.substringAfter('-').toInt() }.forEach(block)
+    }
+
     private fun executeNoneParallel(coroutineContext: CoroutineContext, path: Path) {
         runBlocking(coroutineContext) {
-            path.forEachDirectoryEntry { folder ->
+            path.forEachBench { folder ->
                 val benchName = folder.name
                 with(contextBuilder(benchName)) {
                     if (onNewBenchmark(benchName)) {
-                        folder.forEachDirectoryEntry { path ->
+                        folder.forEachSmtFile { path ->
                             onNewSmtFile(path)
                         }
                         onBenchmarkEnd(benchName)
@@ -66,13 +76,13 @@ class BenchmarkExecutor<Context>(private val contextBuilder: (String) -> Context
 
     private fun executeSmtParallel(coroutineContext: CoroutineContext, path: Path) {
         runBlocking(coroutineContext) {
-            path.forEachDirectoryEntry { folder ->
+            path.forEachBench { folder ->
                 coroutineScope {
                     val benchName = folder.name
                     with(contextBuilder(benchName)) {
                         if (onNewBenchmark(benchName)) {
                             coroutineScope {
-                                folder.forEachDirectoryEntry { path ->
+                                folder.forEachSmtFile { path ->
                                     launch { onNewSmtFile(path) }
                                 }
                             }
@@ -88,12 +98,12 @@ class BenchmarkExecutor<Context>(private val contextBuilder: (String) -> Context
     private fun executeBenchParallel(coroutineContext: CoroutineContext, path: Path) {
         runBlocking(coroutineContext) {
             coroutineScope {
-                path.forEachDirectoryEntry { folder ->
+                path.forEachBench { folder ->
                     launch {
                         val benchName = folder.name
                         with(contextBuilder(benchName)) {
                             if (onNewBenchmark(benchName)) {
-                                folder.forEachDirectoryEntry { path ->
+                                folder.forEachSmtFile { path ->
                                     onNewSmtFile(path)
                                 }
                                 onBenchmarkEnd(benchName)
@@ -109,13 +119,13 @@ class BenchmarkExecutor<Context>(private val contextBuilder: (String) -> Context
     private fun executeAllParallel(coroutineContext: CoroutineContext, path: Path) {
         runBlocking(coroutineContext) {
             coroutineScope {
-                path.forEachDirectoryEntry { folder ->
+                path.forEachBench { folder ->
                     launch {
                         val benchName = folder.name
                         with(contextBuilder(benchName)) {
                             if (onNewBenchmark(benchName)) {
                                 coroutineScope {
-                                    folder.forEachDirectoryEntry { path ->
+                                    folder.forEachSmtFile { path ->
                                         launch { onNewSmtFile(path) }
                                     }
                                 }

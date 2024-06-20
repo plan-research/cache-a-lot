@@ -5,15 +5,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.plan.research.cachealot.KBoolExprs
 
-class KListIndex<V>: KFlatIndex<V>() {
+class KListIndex : KFlatIndex() {
     private val mutex = Mutex()
-    private var candidates = persistentListOf<V>()
+    private var candidates = persistentListOf<KBoolExprs>()
 
-    override suspend fun getCandidates(): Flow<V> =
+    override suspend fun getCandidates(): Flow<KBoolExprs> =
         mutex.withLock { candidates }.asFlow()
 
-    override suspend fun insert(value: V) {
+    override suspend fun insert(value: KBoolExprs) {
         mutex.withLock { candidates = candidates.add(value) }
     }
 }

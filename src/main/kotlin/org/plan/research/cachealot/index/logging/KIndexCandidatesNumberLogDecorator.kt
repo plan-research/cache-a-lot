@@ -3,6 +3,7 @@ package org.plan.research.cachealot.index.logging
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
+import org.plan.research.cachealot.KBoolExprs
 import org.plan.research.cachealot.index.KIndex
 import org.plan.research.cachealot.index.flat.KFlatIndex
 import org.plan.research.cachealot.statLogger
@@ -19,24 +20,24 @@ private fun <V> Flow<V>.wrapConsumed(name: String): Flow<V> {
     }
 }
 
-class KIndexCandidatesNumberLogDecorator<K, V>(
+class KIndexCandidatesNumberLogDecorator<K>(
     private val name: String,
-    private val inner: KIndex<K, V>
-) : KIndex<K, V> by inner {
-    override suspend fun getCandidates(key: K): Flow<V> = inner.getCandidates(key).wrapConsumed(name)
+    private val inner: KIndex<K>
+) : KIndex<K> by inner {
+    override suspend fun getCandidates(key: K): Flow<KBoolExprs> = inner.getCandidates(key).wrapConsumed(name)
 }
 
 
-class KFlatIndexCandidatesNumberLogDecorator<V>(
+class KFlatIndexCandidatesNumberLogDecorator(
     private val name: String,
-    private val inner: KFlatIndex<V>
-) : KFlatIndex<V>() {
-    override suspend fun getCandidates(): Flow<V> = inner.getCandidates().wrapConsumed(name)
-    override suspend fun insert(value: V) = inner.insert(value)
+    private val inner: KFlatIndex
+) : KFlatIndex() {
+    override suspend fun getCandidates(): Flow<KBoolExprs> = inner.getCandidates().wrapConsumed(name)
+    override suspend fun insert(value: KBoolExprs) = inner.insert(value)
 }
 
-fun <V> KFlatIndex<V>.withCandidatesNumberLog(name: String? = null): KFlatIndex<V> =
+fun KFlatIndex.withCandidatesNumberLog(name: String? = null): KFlatIndex =
     KFlatIndexCandidatesNumberLogDecorator(name ?: javaClass.simpleName, this)
 
-fun <K, V> KIndex<K, V>.withCandidatesNumberLog(name: String? = null): KIndex<K, V> =
+fun <K> KIndex<K>.withCandidatesNumberLog(name: String? = null): KIndex<K> =
     KIndexCandidatesNumberLogDecorator(name ?: javaClass.simpleName, this)
