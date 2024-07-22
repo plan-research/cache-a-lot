@@ -2,8 +2,6 @@ package org.plan.research.cachealot.testers
 
 import io.ksmt.KContext
 import io.ksmt.decl.KDecl
-import io.ksmt.expr.KExpr
-import io.ksmt.sort.KBoolSort
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.PersistentSet
 import kotlinx.collections.immutable.persistentHashMapOf
@@ -12,7 +10,7 @@ import org.plan.research.cachealot.KBoolExprs
 import org.plan.research.cachealot.hash.KCacheContext
 import org.plan.research.cachealot.testers.substitution.*
 import org.plan.research.cachealot.testers.substitution.impl.MapSubstitutionMonadState
-import org.plan.research.cachealot.toCachedSequence
+import java.util.*
 
 class KFullOptTester(
     private val ctx: KContext,
@@ -89,13 +87,89 @@ class KFullOptTester(
         states: List<List<PersistentMap<KDecl<*>, KDecl<*>>>>,
         possibleTargets: MutableMap<KDecl<*>, Set<KDecl<*>>>
     ): Boolean {
-        val result = states.fold(sequenceOf(persistentHashMapOf<KDecl<*>, KDecl<*>>())) { acc, maps ->
-            if (acc.firstOrNull() == null) return false
-            val filteredMap = maps.filter { it.all { (origin, target) -> target in possibleTargets[origin]!! } }
-            acc.flatMap { map -> filteredMap.mapNotNull { map.join(it) } }.iterator().toCachedSequence()
+        // ---------------------------------------------------- Cut off version
+//        val result = states.fold(listOf(persistentHashMapOf<KDecl<*>, KDecl<*>>())) { acc, maps ->
+//            if (acc.isEmpty()) return false
+//            val filteredMap = maps.filter { it.all { (origin, target) -> target in possibleTargets[origin]!! } }
+//            acc.flatMap { map -> filteredMap.mapNotNull { map.join(it) } }
+//                .randomSequence() // memory optimization (accuracy decrease by 20% but 30G -> 5G)
+//                .take(MAX_STATES_SIZE)
+//                .toList()
+//        }
+//
+//        return result.isNotEmpty()
+
+        // ---------------------------------------------------- Lazy (initial) version
+
+        //        val result = states.fold(sequenceOf(persistentHashMapOf<KDecl<*>, KDecl<*>>())) { acc, maps ->
+//            if (acc.firstOrNull() == null) return false
+//            val filteredMap = maps.filter { it.all { (origin, target) -> target in possibleTargets[origin]!! } }
+//            acc.flatMap { map -> filteredMap.mapNotNull { map.join(it) } }.iterator().toCachedSequence()
+//        }
+//
+//        return result.firstOrNull() != null
+
+        // ---------------------------------------------------- True lazy version
+
+//        val filteredStates = lazyList(mutableListOf()) { i ->
+//            states[i].filter { it.all { (origin, target) -> target in possibleTargets[origin]!! } }.also {
+//                statLogger.info { "${i}-th state size: ${it.size}" }
+//            }
+//        }
+//
+//        val index = MutableList(states.size) { 0 }
+//        var currentStateIndex = 0
+//        val currentStates = mutableListOf(persistentHashMapOf<KDecl<*>, KDecl<*>>())
+//
+//        while (currentStateIndex < states.size) {
+//            val prevState = currentStates.last()
+//            val state = filteredStates[currentStateIndex]
+//            if (state.size == 0) return false
+//
+//            var i = index[currentStateIndex]
+//            var newState: PersistentMap<KDecl<*>, KDecl<*>>? = null
+//            while (i < state.size) {
+//                newState = prevState.join(state[i++]) ?: continue
+//                break
+//            }
+//
+//            if (newState == null) {
+//                if (currentStateIndex == 0) return false
+//                index[currentStateIndex--] = 0
+//                currentStates.removeLast()
+//            } else {
+//                index[currentStateIndex++] = i
+//                currentStates.add(newState)
+//            }
+//        }
+//        return true
+
+        // ---------------------------------------------------- Prioritisation version
+        val filteredStates = states.map {
+            it.filter { it.all { (origin, target) -> target in possibleTargets[origin]!! } }.also {
+                if (it.isEmpty()) return false
+            }
         }
 
-        return result.firstOrNull() != null
+        val statesQueue =
+            PriorityQueue<List<PersistentMap<KDecl<*>, KDecl<*>>>>(filteredStates.size, compareBy { it.size })
+
+        statesQueue.addAll(filteredStates)
+
+        while (statesQueue.size > 1) {
+            var state1 = statesQueue.poll()
+            var state2 = statesQueue.poll()
+            if (state1.first().size < state2.first().size) {
+                state1.let {
+                    state1 = state2
+                    state2 = it
+                }
+            }
+            val joinedState = state1.flatMap { map -> state2.mapNotNull { map.join(it) } }
+            if (joinedState.isEmpty()) return false
+            statesQueue.add(joinedState)
+        }
+        return statesQueue.poll().isNotEmpty()
     }
 
     override suspend fun test(unsatCore: KBoolExprs, exprs: KBoolExprs): Boolean {
