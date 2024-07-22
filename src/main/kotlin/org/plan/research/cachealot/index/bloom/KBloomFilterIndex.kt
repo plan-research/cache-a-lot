@@ -9,8 +9,9 @@ import org.plan.research.cachealot.hash.KExprHasher
 import org.plan.research.cachealot.index.KIndex
 import org.plan.research.cachealot.index.KKeyComputer
 
-class KBloomFilterIndex(val nbits: Int, val coreHasher: KExprHasher, val exprHasher: KExprHasher) :
-    KIndex<KBloomFilterKey> {
+class KBloomFilterIndex(
+    val nbits: Int, val coreHasher: KExprHasher, val exprHasher: KExprHasher
+) : KIndex<KBloomFilterKey> {
     private val cores = mutableListOf<Pair<KBloomFilterKey, KBoolExprs>>()
 
     override suspend fun insert(key: KBloomFilterKey, value: KBoolExprs) {

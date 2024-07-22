@@ -2,6 +2,7 @@ package org.plan.research.cachealot
 
 import io.ksmt.decl.KDecl
 import io.ksmt.decl.KParameterizedFuncDecl
+import kotlin.random.Random.Default.nextInt
 
 infix fun KDecl<*>?.structEquals(other: KDecl<*>?): Boolean {
     if (this === other) return true
@@ -41,3 +42,17 @@ class CachedSequence<T>(private val iterator: Iterator<T>) : Sequence<T> {
 }
 
 fun <T> Iterator<T>.toCachedSequence(): CachedSequence<T> = CachedSequence(this)
+
+// It could be optimized to O( n * log(n) ) (now it's O(n^2))
+fun <T> List<T>.randomSequence(): Sequence<T> = sequence {
+    val peaked = mutableSetOf<Int>()
+    forEach {
+        var index = nextInt(size - peaked.size)
+        val iter = peaked.iterator()
+        while (iter.hasNext() && index >= iter.next()) {
+            index++
+        }
+        yield(get(index))
+        assert(peaked.add(index))
+    }
+}

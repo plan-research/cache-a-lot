@@ -16,3 +16,13 @@ class KBloomFilterKeyOrigin(nbits: Int, override val origin: BitSet) : KBloomFil
 class KBloomFilterKeyInverted(nbits: Int, override val inverted: BitSet) : KBloomFilterKey(nbits) {
     override val origin: BitSet by lazy { inverted.getInverted() }
 }
+
+class KBloomFilterLazyKey(nbits: Int, computeKey: () -> KBloomFilterKey) : KBloomFilterKey(nbits) {
+    private val inner by lazy { computeKey() }
+
+    override val origin: BitSet
+        get() = inner.origin
+    override val inverted: BitSet
+        get() = inner.inverted
+
+}
