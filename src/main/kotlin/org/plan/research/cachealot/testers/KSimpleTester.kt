@@ -5,9 +5,10 @@ import io.ksmt.expr.KArrayLambdaBase
 import io.ksmt.expr.KExpr
 import io.ksmt.expr.KQuantifier
 import org.plan.research.cachealot.KBoolExprs
+import org.plan.research.cachealot.context.KEmptyLocal
 import org.plan.research.cachealot.structEquals
 
-class KSimpleTester : KUnsatTester {
+class KSimpleTester : KUnsatTester<KEmptyLocal> {
 
     private inline fun <T> listEquals(
         lhs: List<T>, rhs: List<T>,
@@ -39,7 +40,7 @@ class KSimpleTester : KUnsatTester {
         }
     }
 
-    override suspend fun test(unsatCore: KBoolExprs, exprs: KBoolExprs): Boolean {
+    override suspend fun test(ctx: KEmptyLocal, unsatCore: KBoolExprs, exprs: KBoolExprs): Boolean {
         return unsatCore.all { expr -> exprs.any { equals(expr, it) } }
     }
 }

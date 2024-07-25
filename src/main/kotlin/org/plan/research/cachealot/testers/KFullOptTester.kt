@@ -8,16 +8,14 @@ import kotlinx.collections.immutable.persistentHashMapOf
 import kotlinx.collections.immutable.persistentHashSetOf
 import org.plan.research.cachealot.KBoolExprs
 import org.plan.research.cachealot.checkActive
-import org.plan.research.cachealot.hash.KCacheContext
-import org.plan.research.cachealot.statLogger
+import org.plan.research.cachealot.context.KCacheHashingContext
 import org.plan.research.cachealot.testers.substitution.*
 import org.plan.research.cachealot.testers.substitution.impl.MapSubstitutionMonadState
 import kotlin.math.max
 
 class KFullOptTester(
-    private val ctx: KContext,
-    private val cacheContext: KCacheContext,
-) : KUnsatTester {
+    private val ctx: KContext
+) : KUnsatTester<KCacheHashingContext.Local> {
 
     private class DeclScale {
         val decls = mutableListOf<KDecl<*>>()
@@ -153,6 +151,7 @@ class KFullOptTester(
     }
 
     private suspend fun buildStates(
+        cacheContext: KCacheHashingContext.Local,
         unsatCore: KBoolExprs,
         exprs: KBoolExprs,
         possibleTargets: MutableMap<KDecl<*>, Set<KDecl<*>>>
@@ -248,9 +247,9 @@ class KFullOptTester(
         return true
     }
 
-    override suspend fun test(unsatCore: KBoolExprs, exprs: KBoolExprs): Boolean {
+    override suspend fun test(ctx: KCacheHashingContext.Local, unsatCore: KBoolExprs, exprs: KBoolExprs): Boolean {
         val possibleTargets = hashMapOf<KDecl<*>, Set<KDecl<*>>>()
-        val states = buildStates(unsatCore, exprs, possibleTargets) ?: return false
+        val states = buildStates(ctx, unsatCore, exprs, possibleTargets) ?: return false
         return isJoinedStatesNotEmpty(states.filter { it.names.size > 1 }, possibleTargets)
     }
 }

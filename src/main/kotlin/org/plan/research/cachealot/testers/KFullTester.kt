@@ -2,17 +2,18 @@ package org.plan.research.cachealot.testers
 
 import io.ksmt.KContext
 import org.plan.research.cachealot.KBoolExprs
+import org.plan.research.cachealot.context.KEmptyLocal
 import org.plan.research.cachealot.testers.substitution.SubstitutionMonadHolder
 import org.plan.research.cachealot.testers.substitution.impl.MapSubstitutionMonadState
 import org.plan.research.cachealot.testers.substitution.wrap
 
-class KFullTester(private val ctx: KContext) : KUnsatTester {
+class KFullTester(private val ctx: KContext) : KUnsatTester<KEmptyLocal> {
 
     private fun createMonad() = MapSubstitutionMonadState().wrap().wrap()
 
     private data class StackEntry(val index: Int, val monad: SubstitutionMonadHolder<MapSubstitutionMonadState>)
 
-    override suspend fun test(unsatCore: KBoolExprs, exprs: KBoolExprs): Boolean {
+    override suspend fun test(ctx: KEmptyLocal, unsatCore: KBoolExprs, exprs: KBoolExprs): Boolean {
         val queue = ArrayDeque<StackEntry>()
         queue.addLast(StackEntry(0, createMonad()))
         while (queue.isNotEmpty()) {

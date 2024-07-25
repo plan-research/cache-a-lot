@@ -2,11 +2,13 @@ package org.plan.research.cachealot.index
 
 import kotlinx.coroutines.flow.Flow
 import org.plan.research.cachealot.KBoolExprs
+import org.plan.research.cachealot.context.KGlobalCacheContext
+import org.plan.research.cachealot.context.KLocalCacheContext
 
-interface KIndex<K> {
-    suspend fun insert(key: K, value: KBoolExprs)
-    suspend fun getCandidates(key: K): Flow<KBoolExprs>
+interface KIndex<K, in L: KLocalCacheContext, in G: KGlobalCacheContext<*>> {
+    suspend fun insert(ctx: G, key: K, value: KBoolExprs)
+    suspend fun getCandidates(ctx: L, key: K): Flow<KBoolExprs>
 
-    fun createCoreKeyComputer(): KKeyComputer<K>
-    fun createExprKeyComputer(): KKeyComputer<K>
+    fun createCoreKeyComputer(ctx: G): KKeyComputer<K>
+    fun createExprKeyComputer(ctx: L): KKeyComputer<K>
 }

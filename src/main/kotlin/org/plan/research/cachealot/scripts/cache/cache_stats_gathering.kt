@@ -12,10 +12,8 @@ import org.jetbrains.kotlinx.dataframe.io.writeCSV
 import org.plan.research.cachealot.cache.KUnsatCache
 import org.plan.research.cachealot.cache.KUnsatCacheFactory
 import org.plan.research.cachealot.cache.decorators.filters.withUnsatCoreMaxSize
-import org.plan.research.cachealot.cache.decorators.onCheckEnd
-import org.plan.research.cachealot.hash.KCacheContext
+import org.plan.research.cachealot.context.KCacheHashingContext
 import org.plan.research.cachealot.index.bloom.KBloomFilterIndex
-import org.plan.research.cachealot.index.flat.KFlatIndex
 import org.plan.research.cachealot.index.flat.KListIndex
 import org.plan.research.cachealot.index.flat.KRandomIndex
 import org.plan.research.cachealot.index.logging.withCandidatesNumberLog
@@ -64,26 +62,22 @@ private fun buildUnsatCache(properties: ScriptProperties, name: String): KUnsatC
         return KUnsatCacheFactory.create()
     }
 
-    val cacheContext = KCacheContext()
+    val cacheContext = KCacheHashingContext()
     val tester = when (properties.tester) {
         "simple" -> KSimpleTester()
         "full" -> KFullTester(scriptContext.ctx)
-        "fullopt" -> KFullOptTester(scriptContext.ctx, cacheContext)
+        "fullopt" -> KFullOptTester(scriptContext.ctx)
         else -> throw IllegalArgumentException("Unsupported tester class: ${properties.tester}")
     }
 
     val index = when (properties.index) {
         "random" -> KRandomIndex(10)
         "list" -> KListIndex()
-        "bloom" -> KBloomFilterIndex(properties.nbits!!, cacheContext.exprHasher, cacheContext.exprHasher)
+        "bloom" -> KBloomFilterIndex(properties.nbits!!)
         else -> throw IllegalArgumentException("Unsupported index: ${properties.index}")
     }
 
-    var cache = if (index is KFlatIndex) {
-        KUnsatCacheFactory.create(tester, index.withCandidatesNumberLog("$name index"))
-    } else {
-        KUnsatCacheFactory.create(tester, index.withCandidatesNumberLog("$name index"))
-    }.onCheckEnd { cacheContext.clearExprsRelated() }
+    var cache = KUnsatCacheFactory.create(cacheContext, tester, index.withCandidatesNumberLog("$name index"))
 
     properties.maxUnsatCoreSize?.let {
         cache = cache.withUnsatCoreMaxSize(it)
