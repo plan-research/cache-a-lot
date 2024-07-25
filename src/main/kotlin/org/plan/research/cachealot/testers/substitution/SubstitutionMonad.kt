@@ -1,15 +1,14 @@
 package org.plan.research.cachealot.testers.substitution
 
 import io.ksmt.decl.KDecl
-import io.ksmt.expr.*
-import org.plan.research.cachealot.structEquals
+import io.ksmt.expr.KExpr
 
 abstract class SubstitutionMonad<T : SubstitutionMonadState<T>> {
     abstract var state: T
 
     abstract fun copy(): SubstitutionMonad<T>
 
-    inline fun scoped(decls: List<KDecl<*>>, block: () -> Unit) {
+    inline suspend fun scoped(decls: List<KDecl<*>>, block: () -> Unit) {
         val extracted = state.extract(decls)
         try {
             state = state.removeAll(decls)
@@ -19,20 +18,20 @@ abstract class SubstitutionMonad<T : SubstitutionMonadState<T>> {
         }
     }
 
-    abstract fun eqDecl(lhs: KDecl<*>, rhs: KDecl<*>)
-    infix fun KDecl<*>.eq(other: KDecl<*>) = eqDecl(this, other)
+    abstract suspend fun eqDecl(lhs: KDecl<*>, rhs: KDecl<*>)
+    infix suspend fun KDecl<*>.eq(other: KDecl<*>) = eqDecl(this, other)
 
-    infix fun List<KDecl<*>>.eqDecls(other: List<KDecl<*>>) {
+    infix suspend fun List<KDecl<*>>.eqDecls(other: List<KDecl<*>>) {
         substitutionAssert { size == other.size }
         for (i in indices) {
             this[i] eq other[i]
         }
     }
 
-    abstract fun eqExpr(lhs: KExpr<*>, rhs: KExpr<*>)
-    infix fun KExpr<*>.eq(other: KExpr<*>) = eqExpr(this, other)
+    abstract suspend fun eqExpr(lhs: KExpr<*>, rhs: KExpr<*>)
+    infix suspend fun KExpr<*>.eq(other: KExpr<*>) = eqExpr(this, other)
 
-    infix fun List<KExpr<*>>.eqExprs(other: List<KExpr<*>>) {
+    infix suspend fun List<KExpr<*>>.eqExprs(other: List<KExpr<*>>) {
         substitutionAssert { size == other.size }
         for (i in indices) {
             this[i] eq other[i]

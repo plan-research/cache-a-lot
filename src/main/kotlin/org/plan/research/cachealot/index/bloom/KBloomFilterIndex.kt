@@ -2,8 +2,6 @@ package org.plan.research.cachealot.index.bloom
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.mapNotNull
 import org.plan.research.cachealot.KBoolExprs
 import org.plan.research.cachealot.hash.KExprHasher
 import org.plan.research.cachealot.index.KIndex

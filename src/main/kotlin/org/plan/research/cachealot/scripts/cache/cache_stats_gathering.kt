@@ -2,15 +2,13 @@ package org.plan.research.cachealot.scripts.cache
 
 import io.ksmt.expr.KAndExpr
 import io.ksmt.solver.KSolverStatus
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
 import org.jetbrains.kotlinx.dataframe.api.append
 import org.jetbrains.kotlinx.dataframe.api.dataFrameOf
 import org.jetbrains.kotlinx.dataframe.io.writeCSV
-import org.plan.research.cachealot.KBoolExprs
 import org.plan.research.cachealot.cache.KUnsatCache
 import org.plan.research.cachealot.cache.KUnsatCacheFactory
 import org.plan.research.cachealot.cache.decorators.onCheckEnd
@@ -28,7 +26,6 @@ import org.plan.research.cachealot.statLogger
 import org.plan.research.cachealot.testers.KFullOptTester
 import org.plan.research.cachealot.testers.KFullTester
 import org.plan.research.cachealot.testers.KSimpleTester
-import org.plan.research.cachealot.testers.KUnsatTester
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
@@ -37,6 +34,7 @@ import kotlin.io.path.Path
 import kotlin.io.path.createDirectory
 import kotlin.io.path.div
 import kotlin.io.path.nameWithoutExtension
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
 import kotlin.time.measureTimedValue
 
@@ -64,38 +62,26 @@ private fun buildUnsatCache(properties: ScriptProperties, name: String): KUnsatC
         return KUnsatCacheFactory.create()
     }
 
-    return if (properties.exclude.all { it !in name }) {
-        val cacheContext = KCacheContext()
-        val tester = when (properties.tester) {
-            "simple" -> KSimpleTester()
-            "full" -> KFullTester(scriptContext.ctx)
-            "fullopt" -> KFullOptTester(scriptContext.ctx, cacheContext)
-            else -> throw IllegalArgumentException("Unsupported tester class: ${properties.tester}")
-        }
-
-        val index = when (properties.index) {
-            "random" -> KRandomIndex(10)
-            "list" -> KListIndex()
-            "bloom" -> KBloomFilterIndex(properties.nbits!!, cacheContext.exprHasher, cacheContext.exprHasher)
-            else -> throw IllegalArgumentException("Unsupported index: ${properties.index}")
-        }
-
-        if (index is KFlatIndex) {
-            KUnsatCacheFactory.create(tester, index.withCandidatesNumberLog("$name index"))
-        } else {
-            KUnsatCacheFactory.create(tester, index.withCandidatesNumberLog("$name index"))
-        }.onCheckEnd { cacheContext.clearExprsRelated() }
-    } else {
-        KUnsatCacheFactory.create(
-            object : KUnsatTester {
-                override suspend fun test(unsatCore: KBoolExprs, exprs: KBoolExprs): Boolean = false
-            },
-            object : KFlatIndex() {
-                override suspend fun getCandidates(): Flow<KBoolExprs> = emptyFlow()
-                override suspend fun insert(value: KBoolExprs) {}
-            }.withCandidatesNumberLog("$name index")
-        )
+    val cacheContext = KCacheContext()
+    val tester = when (properties.tester) {
+        "simple" -> KSimpleTester()
+        "full" -> KFullTester(scriptContext.ctx)
+        "fullopt" -> KFullOptTester(scriptContext.ctx, cacheContext)
+        else -> throw IllegalArgumentException("Unsupported tester class: ${properties.tester}")
     }
+
+    val index = when (properties.index) {
+        "random" -> KRandomIndex(10)
+        "list" -> KListIndex()
+        "bloom" -> KBloomFilterIndex(properties.nbits!!, cacheContext.exprHasher, cacheContext.exprHasher)
+        else -> throw IllegalArgumentException("Unsupported index: ${properties.index}")
+    }
+
+    return if (index is KFlatIndex) {
+        KUnsatCacheFactory.create(tester, index.withCandidatesNumberLog("$name index"))
+    } else {
+        KUnsatCacheFactory.create(tester, index.withCandidatesNumberLog("$name index"))
+    }.onCheckEnd { cacheContext.clearExprsRelated() }
 }
 
 private data class StatsEntry(
@@ -166,13 +152,15 @@ private class StatsCollector(private val name: String) {
             cnt.incrementAndGet()
 
             val (checkResult, checkingDuration) = measureTimedValue {
-                unsatCache.check(assertions)
+                withTimeoutOrNull(1.seconds) {
+                    unsatCache.check(assertions)
+                }
             }
             statLogger.info {
                 "$fullName check: $checkResult, ${checkingDuration.inWholeMilliseconds}"
             }
             checkingTime.addAndGet(checkingDuration.inWholeMilliseconds)
-            if (checkResult) {
+            if (checkResult == true) {
                 unsat.incrementAndGet()
                 reusedUnsat.incrementAndGet()
                 return@with
@@ -280,6 +268,7 @@ fun main(args: Array<String>) {
             val unsatCache = buildUnsatCache(properties, it)
         }
     }.onNewBenchmark {
+        if (properties.exclude.any { e -> e in it }) return@onNewBenchmark false
         benchSemaphore.acquire()
         scriptLogger.debug { "New Benchmark: $it" }
         true

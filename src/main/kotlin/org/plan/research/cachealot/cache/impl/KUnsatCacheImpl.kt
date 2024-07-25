@@ -1,5 +1,6 @@
 package org.plan.research.cachealot.cache.impl
 
+import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.firstOrNull
 import org.plan.research.cachealot.KBoolExprs
 import org.plan.research.cachealot.cache.KUnsatCache
@@ -22,7 +23,7 @@ class KUnsatCacheImpl<K>(
 
     override suspend fun check(exprs: KBoolExprs): Boolean {
         val key = exprKeyComputer(exprs)
-        return index.getCandidates(key).firstOrNull { candidate ->
+        return index.getCandidates(key).cancellable().firstOrNull { candidate ->
             tester.test(candidate, exprs)
         } != null
     }

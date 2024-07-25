@@ -7,15 +7,116 @@ import kotlinx.collections.immutable.PersistentSet
 import kotlinx.collections.immutable.persistentHashMapOf
 import kotlinx.collections.immutable.persistentHashSetOf
 import org.plan.research.cachealot.KBoolExprs
+import org.plan.research.cachealot.checkActive
 import org.plan.research.cachealot.hash.KCacheContext
 import org.plan.research.cachealot.testers.substitution.*
 import org.plan.research.cachealot.testers.substitution.impl.MapSubstitutionMonadState
-import java.util.*
+import kotlin.math.max
 
 class KFullOptTester(
     private val ctx: KContext,
     private val cacheContext: KCacheContext,
 ) : KUnsatTester {
+
+    private class DeclScale {
+        val decls = mutableListOf<KDecl<*>>()
+        val declToIndex = hashMapOf<KDecl<*>, Int>()
+
+        fun index(decl: KDecl<*>): Int =
+            declToIndex.computeIfAbsent(decl) {
+//                val index = decls.indexOfFirst { it structEquals decl }
+//                if (index == -1) {
+                decls += decl
+                decls.lastIndex
+//                } else {
+//                    index
+//                }
+            }
+    }
+
+    private class RenameData(val scale: DeclScale) {
+        val names = mutableListOf<KDecl<*>>()
+        val values = mutableListOf<List<KDecl<*>>>()
+
+        val size: Int get() = values.size
+
+        var targetKeys: Set<KDecl<*>> = emptySet()
+        val keyIndicies: List<Int> by lazy {
+            names.mapIndexedNotNull { index, decl -> index.takeIf { decl in targetKeys } }
+        }
+        val sortKeyValues by lazy {
+            values.map { value -> keyIndicies.map { scale.index(value[it]) } }
+        }
+        val sortValuesIndecies by lazy {
+            (0 until size).sortedWith(compareBy(*Array(keyIndicies.size) { index ->
+                { sortKeyValues[it][index] }
+            }))
+        }
+
+        fun filter(possibleTargets: MutableMap<KDecl<*>, Set<KDecl<*>>>): RenameData {
+            values.removeIf { names.withIndex().any { (index, origin) -> it[index] !in possibleTargets[origin]!! } }
+            return this
+        }
+
+        private suspend fun binSearch(targetIndex: List<Int>, lowerBound: Boolean): Int {
+            var left = -1
+            var right = sortValuesIndecies.size
+            while (right - left > 1) {
+                checkActive()
+                val mid = (right + left) / 2
+                val index = sortKeyValues[sortValuesIndecies[mid]]
+                var isLess = !lowerBound
+                for (i in index.indices) {
+                    checkActive()
+                    if (index[i] < targetIndex[i]) {
+                        isLess = true
+                        break
+                    } else if (index[i] > targetIndex[i]) {
+                        isLess = false
+                        break
+                    }
+                }
+                if (isLess) {
+                    left = mid
+                } else {
+                    right = mid
+                }
+            }
+            return right
+        }
+
+        suspend fun find(getRename: (KDecl<*>) -> KDecl<*>): Iterator<List<KDecl<*>>> {
+            if (keyIndicies.isEmpty()) return values.iterator()
+
+            val targetIndex = keyIndicies.map {
+                checkActive()
+                scale.index(getRename(names[it]))
+            }
+            val lowerBound = binSearch(targetIndex, true)
+            val upperBound = binSearch(targetIndex, false)
+            return iterator {
+                for (i in lowerBound until upperBound) {
+                    yield(values[sortValuesIndecies[i]])
+                }
+            }
+        }
+
+        fun updateWith(map: PersistentMap<KDecl<*>, KDecl<*>>) {
+            val data = mutableListOf<KDecl<*>>()
+
+            if (names.isEmpty()) {
+                map.forEach { (key, value) ->
+                    names += key
+                    data += value
+                }
+            } else {
+                names.forEach { key ->
+                    data += map[key]!!
+                }
+            }
+            values += data
+        }
+    }
 
     private data class OptState(
         val inner: MapSubstitutionMonadState = MapSubstitutionMonadState(),
@@ -59,122 +160,97 @@ class KFullOptTester(
         unsatCore: KBoolExprs,
         exprs: KBoolExprs,
         possibleTargets: MutableMap<KDecl<*>, Set<KDecl<*>>>
-    ): List<List<PersistentMap<KDecl<*>, KDecl<*>>>>? = with(cacheContext) {
+    ): List<RenameData>? = with(cacheContext) {
+        val scale = DeclScale()
         val hash2Exprs = getOrComputeHash2Exprs(exprs)
 
+        checkActive()
+
         unsatCore.map { core ->
+            checkActive()
             val coreHash = coreHasher.computeHash(core)
             hash2Exprs[coreHash]?.let { core to it } ?: return null
         }.map { (core, filteredExprs) ->
+            checkActive()
             var vars = persistentHashMapOf<KDecl<*>, PersistentSet<KDecl<*>>>()
-            val result = filteredExprs.mapNotNull {
+            val result = RenameData(scale)
+            filteredExprs.forEach {
+                checkActive()
                 OptState(
                     variables = vars,
                     possibleTargets = possibleTargets,
                 ).wrap().withHash(coreHasher, exprHasher).wrap().run {
                     core eq it
                     vars = state.variables
-                }?.monad?.state?.inner?.map
-            }.takeIf { it.isNotEmpty() } ?: return null
+                }?.monad?.state?.inner?.map?.let {
+                    result.updateWith(it)
+                }
+            }
+
+            if (result.size == 0) return null
 
             possibleTargets.putAll(vars)
-
             result
         }
     }
 
     private suspend fun isJoinedStatesNotEmpty(
-        states: List<List<PersistentMap<KDecl<*>, KDecl<*>>>>,
+        states: List<RenameData>,
         possibleTargets: MutableMap<KDecl<*>, Set<KDecl<*>>>
     ): Boolean {
-        // ---------------------------------------------------- Cut off version
-//        val result = states.fold(listOf(persistentHashMapOf<KDecl<*>, KDecl<*>>())) { acc, maps ->
-//            if (acc.isEmpty()) return false
-//            val filteredMap = maps.filter { it.all { (origin, target) -> target in possibleTargets[origin]!! } }
-//            acc.flatMap { map -> filteredMap.mapNotNull { map.join(it) } }
-//                .randomSequence() // memory optimization (accuracy decrease by 20% but 30G -> 5G)
-//                .take(MAX_STATES_SIZE)
-//                .toList()
-//        }
-//
-//        return result.isNotEmpty()
-
-        // ---------------------------------------------------- Lazy (initial) version
-
-        //        val result = states.fold(sequenceOf(persistentHashMapOf<KDecl<*>, KDecl<*>>())) { acc, maps ->
-//            if (acc.firstOrNull() == null) return false
-//            val filteredMap = maps.filter { it.all { (origin, target) -> target in possibleTargets[origin]!! } }
-//            acc.flatMap { map -> filteredMap.mapNotNull { map.join(it) } }.iterator().toCachedSequence()
-//        }
-//
-//        return result.firstOrNull() != null
-
-        // ---------------------------------------------------- True lazy version
-
-//        val filteredStates = lazyList(mutableListOf()) { i ->
-//            states[i].filter { it.all { (origin, target) -> target in possibleTargets[origin]!! } }.also {
-//                statLogger.info { "${i}-th state size: ${it.size}" }
-//            }
-//        }
-//
-//        val index = MutableList(states.size) { 0 }
-//        var currentStateIndex = 0
-//        val currentStates = mutableListOf(persistentHashMapOf<KDecl<*>, KDecl<*>>())
-//
-//        while (currentStateIndex < states.size) {
-//            val prevState = currentStates.last()
-//            val state = filteredStates[currentStateIndex]
-//            if (state.size == 0) return false
-//
-//            var i = index[currentStateIndex]
-//            var newState: PersistentMap<KDecl<*>, KDecl<*>>? = null
-//            while (i < state.size) {
-//                newState = prevState.join(state[i++]) ?: continue
-//                break
-//            }
-//
-//            if (newState == null) {
-//                if (currentStateIndex == 0) return false
-//                index[currentStateIndex--] = 0
-//                currentStates.removeLast()
-//            } else {
-//                index[currentStateIndex++] = i
-//                currentStates.add(newState)
-//            }
-//        }
-//        return true
-
-        // ---------------------------------------------------- Prioritisation version
-        val filteredStates = states.map {
-            it.filter { it.all { (origin, target) -> target in possibleTargets[origin]!! } }.also {
-                if (it.isEmpty()) return false
-            }
+        states.forEach {
+            if (it.filter(possibleTargets).size == 0) return false
         }
 
-        val statesQueue =
-            PriorityQueue<List<PersistentMap<KDecl<*>, KDecl<*>>>>(filteredStates.size, compareBy { it.size })
+        val sortedStates = states.sortedBy { it.size }
 
-        statesQueue.addAll(filteredStates)
+        var firstKeyStateIndex = persistentHashMapOf<KDecl<*>, Int>()
+        sortedStates.forEachIndexed { index, it ->
+            it.targetKeys = firstKeyStateIndex.keys
+            firstKeyStateIndex = firstKeyStateIndex.builder().apply {
+                it.names.forEach { putIfAbsent(it, index) }
+            }.build()
+        }
 
-        while (statesQueue.size > 1) {
-            var state1 = statesQueue.poll()
-            var state2 = statesQueue.poll()
-            if (state1.first().size < state2.first().size) {
-                state1.let {
-                    state1 = state2
-                    state2 = it
+        checkActive()
+
+        val index = mutableListOf<Iterator<List<KDecl<*>>>>()
+        var currentStateIndex = 0
+        val currentState = hashMapOf<KDecl<*>, KDecl<*>>()
+        while (currentStateIndex < sortedStates.size) {
+            checkActive()
+
+            val state = sortedStates[currentStateIndex]
+            var isFirst = false
+            val iter = index.getOrElse(currentStateIndex) {
+                isFirst = true
+                state.find { currentState[it]!! }.also {
+                    index += it
                 }
             }
-            val joinedState = state1.flatMap { map -> state2.mapNotNull { map.join(it) } }
-            if (joinedState.isEmpty()) return false
-            statesQueue.add(joinedState)
+            if (iter.hasNext()) {
+                currentState.putAll(state.names.asSequence().zip(iter.next().asSequence()))
+                currentStateIndex++
+            } else {
+                if (currentStateIndex == 0) return false
+                currentStateIndex = if (isFirst) {
+                    state.keyIndicies.fold(0) { acc, i ->
+                        max(acc, firstKeyStateIndex[state.names[i]]!!)
+                    }
+                } else {
+                    currentStateIndex - 1
+                }
+                while (currentStateIndex >= index.size) {
+                    index.removeLast()
+                }
+            }
         }
-        return statesQueue.poll().isNotEmpty()
+        return true
     }
 
     override suspend fun test(unsatCore: KBoolExprs, exprs: KBoolExprs): Boolean {
         val possibleTargets = hashMapOf<KDecl<*>, Set<KDecl<*>>>()
         val states = buildStates(unsatCore, exprs, possibleTargets) ?: return false
-        return isJoinedStatesNotEmpty(states, possibleTargets)
+        return isJoinedStatesNotEmpty(states.filter { it.names.size > 1 }, possibleTargets)
     }
 }

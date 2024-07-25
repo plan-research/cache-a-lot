@@ -2,6 +2,7 @@ package org.plan.research.cachealot.testers.substitution.impl
 
 import io.ksmt.decl.KDecl
 import io.ksmt.expr.*
+import org.plan.research.cachealot.checkActive
 import org.plan.research.cachealot.structEquals
 import org.plan.research.cachealot.testers.substitution.SubstitutionMonad
 import org.plan.research.cachealot.testers.substitution.SubstitutionMonadState
@@ -14,7 +15,8 @@ open class SubstitutionMonadImpl<T : SubstitutionMonadState<T>>(override var sta
     override fun copy(): SubstitutionMonad<T> =
         SubstitutionMonadImpl(state)
 
-    override fun eqDecl(lhs: KDecl<*>, rhs: KDecl<*>) {
+    override suspend fun eqDecl(lhs: KDecl<*>, rhs: KDecl<*>) {
+        checkActive()
         substitutionAssert { lhs.sort == rhs.sort }
         if (!state.checkSubstitution(lhs, rhs)) {
             substitutionAssert { !state.hasSubstitutionFor(lhs) }
@@ -22,7 +24,8 @@ open class SubstitutionMonadImpl<T : SubstitutionMonadState<T>>(override var sta
         }
     }
 
-    override fun eqExpr(lhs: KExpr<*>, rhs: KExpr<*>) {
+    override suspend fun eqExpr(lhs: KExpr<*>, rhs: KExpr<*>) {
+        checkActive()
         substitutionAssert { lhs::class == rhs::class }
         substitutionAssert { lhs.sort == rhs.sort }
         when (lhs) {

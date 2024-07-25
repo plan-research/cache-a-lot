@@ -16,9 +16,9 @@ class SubstitutionMonadHashTransformer<T : SubstitutionMonadState<T>>(
 
     override fun copy(): SubstitutionMonad<T> = SubstitutionMonadHashTransformer(monad.copy(), lhsHasher, rhsHasher)
 
-    override fun eqDecl(lhs: KDecl<*>, rhs: KDecl<*>) = monad.eqDecl(lhs, rhs)
+    override suspend fun eqDecl(lhs: KDecl<*>, rhs: KDecl<*>) = monad.eqDecl(lhs, rhs)
 
-    override fun eqExpr(lhs: KExpr<*>, rhs: KExpr<*>) {
+    override suspend fun eqExpr(lhs: KExpr<*>, rhs: KExpr<*>) {
         substitutionAssert { lhsHasher.computeHash(lhs) == rhsHasher.computeHash(rhs) }
         monad.eqExpr(lhs, rhs)
     }

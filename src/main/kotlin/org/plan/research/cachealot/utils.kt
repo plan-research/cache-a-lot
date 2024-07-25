@@ -2,6 +2,8 @@ package org.plan.research.cachealot
 
 import io.ksmt.decl.KDecl
 import io.ksmt.decl.KParameterizedFuncDecl
+import kotlinx.coroutines.ensureActive
+import kotlin.coroutines.coroutineContext
 import kotlin.random.Random.Default.nextInt
 
 infix fun KDecl<*>?.structEquals(other: KDecl<*>?): Boolean {
@@ -17,32 +19,6 @@ infix fun KDecl<*>?.structEquals(other: KDecl<*>?): Boolean {
     return true
 }
 
-class CachedSequence<T>(private val iterator: Iterator<T>) : Sequence<T> {
-    private val container: MutableList<T> = mutableListOf()
-
-    override fun iterator(): Iterator<T> {
-        return object : Iterator<T> {
-            private var nextIndex = 0
-
-            override fun hasNext(): Boolean {
-                if (nextIndex < container.size) return true
-                return iterator.hasNext()
-            }
-
-            override fun next(): T {
-                if (nextIndex < container.size) return container[nextIndex++]
-                val next = iterator.next()
-                container.add(next)
-                nextIndex++
-                return next
-            }
-
-        }
-    }
-}
-
-fun <T> Iterator<T>.toCachedSequence(): CachedSequence<T> = CachedSequence(this)
-
 // It could be optimized to O( n * log(n) ) (now it's O(n^2))
 fun <T> List<T>.randomSequence(): Sequence<T> = sequence {
     val peaked = mutableSetOf<Int>()
@@ -55,4 +31,8 @@ fun <T> List<T>.randomSequence(): Sequence<T> = sequence {
         yield(get(index))
         assert(peaked.add(index))
     }
+}
+
+suspend inline fun checkActive() {
+    coroutineContext.ensureActive()
 }
