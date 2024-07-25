@@ -11,6 +11,7 @@ import org.jetbrains.kotlinx.dataframe.api.dataFrameOf
 import org.jetbrains.kotlinx.dataframe.io.writeCSV
 import org.plan.research.cachealot.cache.KUnsatCache
 import org.plan.research.cachealot.cache.KUnsatCacheFactory
+import org.plan.research.cachealot.cache.decorators.filters.withUnsatCoreMaxSize
 import org.plan.research.cachealot.cache.decorators.onCheckEnd
 import org.plan.research.cachealot.hash.KCacheContext
 import org.plan.research.cachealot.index.bloom.KBloomFilterIndex
@@ -55,6 +56,7 @@ private class ScriptProperties(path: Path) : CacheScriptPropertiesBase(path) {
     val index = getStringProperty("cache", "index")
     val nbits = getProperty<Int>("cache", "nbits")
     val exclude = getListStringProperty("cache", "exclude")
+    val maxUnsatCoreSize = getProperty<Int>("cache", "maxUnsatCoreSize")
 }
 
 private fun buildUnsatCache(properties: ScriptProperties, name: String): KUnsatCache {
@@ -77,11 +79,17 @@ private fun buildUnsatCache(properties: ScriptProperties, name: String): KUnsatC
         else -> throw IllegalArgumentException("Unsupported index: ${properties.index}")
     }
 
-    return if (index is KFlatIndex) {
+    var cache = if (index is KFlatIndex) {
         KUnsatCacheFactory.create(tester, index.withCandidatesNumberLog("$name index"))
     } else {
         KUnsatCacheFactory.create(tester, index.withCandidatesNumberLog("$name index"))
     }.onCheckEnd { cacheContext.clearExprsRelated() }
+
+    properties.maxUnsatCoreSize?.let {
+        cache = cache.withUnsatCoreMaxSize(it)
+    }
+
+    return cache
 }
 
 private data class StatsEntry(

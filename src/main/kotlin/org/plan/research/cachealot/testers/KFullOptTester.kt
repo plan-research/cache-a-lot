@@ -9,6 +9,7 @@ import kotlinx.collections.immutable.persistentHashSetOf
 import org.plan.research.cachealot.KBoolExprs
 import org.plan.research.cachealot.checkActive
 import org.plan.research.cachealot.hash.KCacheContext
+import org.plan.research.cachealot.statLogger
 import org.plan.research.cachealot.testers.substitution.*
 import org.plan.research.cachealot.testers.substitution.impl.MapSubstitutionMonadState
 import kotlin.math.max
@@ -24,13 +25,8 @@ class KFullOptTester(
 
         fun index(decl: KDecl<*>): Int =
             declToIndex.computeIfAbsent(decl) {
-//                val index = decls.indexOfFirst { it structEquals decl }
-//                if (index == -1) {
                 decls += decl
                 decls.lastIndex
-//                } else {
-//                    index
-//                }
             }
     }
 
@@ -198,6 +194,10 @@ class KFullOptTester(
         states: List<RenameData>,
         possibleTargets: MutableMap<KDecl<*>, Set<KDecl<*>>>
     ): Boolean {
+        // Idea for optimization: let's build states' graph dependencies by names, we can save some iterators that are independent with current
+
+        if (states.size < 2) return true
+
         states.forEach {
             if (it.filter(possibleTargets).size == 0) return false
         }
