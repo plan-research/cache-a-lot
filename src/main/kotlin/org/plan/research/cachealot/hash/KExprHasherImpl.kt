@@ -1,11 +1,38 @@
 package org.plan.research.cachealot.hash
 
 import io.ksmt.expr.*
-import java.util.IdentityHashMap
+import kotlinx.coroutines.channels.Channel
+import java.util.concurrent.ConcurrentHashMap
 
 class KExprHasherImpl(val maxHeight: Int = UNLIMITED) : KExprHasher {
 
-    private val cache = IdentityHashMap<KExpr<*>, ReturnEntry>()
+    private class IdentityWrapper(val expr: KExpr<*>) {
+        override fun hashCode() = System.identityHashCode(expr)
+        override fun equals(other: Any?): Boolean {
+            if (other == null || other !is IdentityWrapper) return false
+            return expr === other.expr
+        }
+    }
+
+    private fun KExpr<*>.wrap() = IdentityWrapper(this)
+
+    private val cache = ConcurrentHashMap<IdentityWrapper, Channel<ReturnEntry?>>()
+    private suspend fun getFromCache(expr: KExpr<*>): ReturnEntry? {
+        val channel = cache.computeIfAbsent(expr.wrap()) {
+            Channel<ReturnEntry?>(1).apply {
+                trySend(null)
+            }
+        }
+        return channel.receive()
+    }
+
+    private suspend fun putIntoCache(expr: KExpr<*>, entry: ReturnEntry) {
+        val channel = cache.computeIfAbsent(expr.wrap()) {
+            Channel(1)
+        }
+        channel.tryReceive()
+        channel.send(entry)
+    }
 
     companion object {
         private const val HASH_SHIFT = 31L
@@ -37,8 +64,11 @@ class KExprHasherImpl(val maxHeight: Int = UNLIMITED) : KExprHasher {
     private data class StackEntry(val expr: KExpr<*>, var hash: Long = 0, var full: Boolean = true, var state: Int = 0)
     private data class ReturnEntry(val hash: Long, val full: Boolean)
 
-    override fun computeHash(expr: KExpr<*>): Long {
-        cache[expr]?.let { return it.hash }
+    override suspend fun computeHash(expr: KExpr<*>): Long {
+        getFromCache(expr)?.let {
+            putIntoCache(expr, it)
+            return it.hash
+        }
         val stack = ArrayDeque<StackEntry>()
         stack.add(StackEntry(expr))
         var ret: ReturnEntry? = null
@@ -70,21 +100,21 @@ class KExprHasherImpl(val maxHeight: Int = UNLIMITED) : KExprHasher {
             if (next == null) {
                 ReturnEntry(entry.hash, entry.full).let {
                     if (it.full) {
-                        cache[entry.expr] = it
+                        putIntoCache(entry.expr, it)
                     }
                     ret = it
                 }
                 stack.removeLast()
             } else {
                 entry.state++
-                if (next !in cache && (maxHeight == UNLIMITED || stack.size < maxHeight)) {
+                if (maxHeight == UNLIMITED || stack.size < maxHeight) {
                     stack.addLast(StackEntry(next))
                 } else {
-                    ret = cache[next] ?: ReturnEntry(computeContentHash(next), false)
+                    ret = ReturnEntry(computeContentHash(next), false)
                 }
             }
         }
-        cache[expr] = ret!!
+        putIntoCache(expr, ret!!)
         return ret!!.hash
     }
 

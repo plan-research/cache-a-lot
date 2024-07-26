@@ -19,7 +19,7 @@ class KCacheHashingContext : KGlobalCacheContext<KCacheHashingContext.Local> {
 
         private val hash2Exprs = hashMapOf<Long, MutableList<KExpr<KBoolSort>>>()
 
-        fun getOrComputeHash2Exprs(exprs: KBoolExprs): HashMap<Long, MutableList<KExpr<KBoolSort>>> {
+        suspend fun getOrComputeHash2Exprs(exprs: KBoolExprs): HashMap<Long, MutableList<KExpr<KBoolSort>>> {
             if (hash2Exprs.isNotEmpty()) return hash2Exprs
             exprs.forEach { hash2Exprs.getOrPut(exprHasher.computeHash(it)) { mutableListOf() }.add(it) }
             return hash2Exprs

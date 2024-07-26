@@ -2,9 +2,11 @@ package org.plan.research.cachealot.scripts.cache
 
 import io.ksmt.expr.KAndExpr
 import io.ksmt.solver.KSolverStatus
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withTimeoutOrNull
 import org.jetbrains.kotlinx.dataframe.api.append
 import org.jetbrains.kotlinx.dataframe.api.dataFrameOf
@@ -40,13 +42,19 @@ import kotlin.time.measureTimedValue
 private val scriptContext = ScriptContext()
 
 private val benchmarkPermits = scriptContext.poolSize
+private val smtPermits = scriptContext.poolSize
 
 //private val executionMode = ExecutionMode.BENCH_PARALLEL
 //private val coroutineScope = Dispatchers.Default
 //private val usePortfolio = true
+
 private val executionMode = ExecutionMode.NONE_PARALLEL
 private val coroutineScope = EmptyCoroutineContext
 private val usePortfolio = false
+
+//private val executionMode = ExecutionMode.SMT_PARALLEL
+//private val coroutineScope = Dispatchers.Default
+//private val usePortfolio = true
 
 private class ScriptProperties(path: Path) : CacheScriptPropertiesBase(path) {
     val empty = getProperty<Boolean>("cache", "empty") ?: false
@@ -263,6 +271,7 @@ fun main(args: Array<String>) {
     )
     val mutex = Mutex()
     val benchSemaphore = Semaphore(benchmarkPermits)
+    val smtSemaphore = Semaphore(smtPermits)
 
     BenchmarkExecutor {
         object {
@@ -275,8 +284,10 @@ fun main(args: Array<String>) {
         scriptLogger.debug { "New Benchmark: $it" }
         true
     }.onNewSmtFile {
-        scriptLogger.debug { "New Smt File: $it" }
-        localStats.update(unsatCache, it)
+        smtSemaphore.withPermit {
+            scriptLogger.debug { "New Smt File: $it" }
+            localStats.update(unsatCache, it)
+        }
     }.onBenchmarkEnd { benchName ->
         scriptLogger.debug { "Benchmark ended: $benchName" }
         val result = localStats.result

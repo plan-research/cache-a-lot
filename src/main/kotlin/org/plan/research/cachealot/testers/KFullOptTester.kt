@@ -195,13 +195,12 @@ class KFullOptTester(
     ): Boolean {
         // Idea for optimization: let's build states' graph dependencies by names, we can save some iterators that are independent with current
 
-        if (states.size < 2) return true
-
         states.forEach {
             if (it.filter(possibleTargets).size == 0) return false
         }
 
-        val sortedStates = states.sortedBy { it.size }
+        val sortedStates = states.filter { it.names.size > 1 }.sortedBy { it.size }
+        if (sortedStates.size < 2) return true
 
         var firstKeyStateIndex = persistentHashMapOf<KDecl<*>, Int>()
         sortedStates.forEachIndexed { index, it ->
@@ -250,6 +249,6 @@ class KFullOptTester(
     override suspend fun test(ctx: KCacheHashingContext.Local, unsatCore: KBoolExprs, exprs: KBoolExprs): Boolean {
         val possibleTargets = hashMapOf<KDecl<*>, Set<KDecl<*>>>()
         val states = buildStates(ctx, unsatCore, exprs, possibleTargets) ?: return false
-        return isJoinedStatesNotEmpty(states.filter { it.names.size > 1 }, possibleTargets)
+        return isJoinedStatesNotEmpty(states, possibleTargets)
     }
 }
